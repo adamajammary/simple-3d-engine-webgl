@@ -1,0 +1,260 @@
+* {
+	color:     white;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size:   10pt;
+	font-weight: normal;
+}
+
+a {
+	font-weight:     bold;
+	text-decoration: none;
+}
+
+a:hover {
+	cursor:          pointer;
+	text-decoration: underline;
+}
+
+body {
+	background-color: #1B2835;
+	text-align:       center;
+	width:            99%;
+	height:           98%;
+}
+
+button {
+	background-color: #202020;
+}
+
+h1 {
+	font-size:   24pt;
+	font-weight: bold;
+}
+
+h2 {
+	font-size:   20pt;
+	font-weight: bold;
+}
+
+h3 {
+	font-size:   16pt;
+	font-weight: bold;
+}
+
+h4 {
+	font-size:   14pt;
+	font-weight: bold;
+}
+
+h5 {
+	font-size:   12pt;
+	font-weight: bold;
+}
+
+h6 {
+	font-size:   10pt;
+	font-weight: bold;
+}
+
+hr {
+	margin: 10px 0px 15px 0px;
+}
+
+html {
+	width:  100%;
+	height: 100%;
+}
+
+img {
+	border: none;
+}
+
+input[type="button"] {
+	background-color: #202020;
+}
+
+input[type="checkbox"] {
+	vertical-align: middle;
+}
+
+input[type="file"] {
+	color: transparent;
+	width: 70px;
+}
+
+input[type="number"], input[type="text"] {
+	color: black;
+}
+
+input[type="range"] {
+	vertical-align: middle;
+}
+
+select, option {
+	color: black;
+}
+
+table {
+	border-collapse: collapse;
+	margin-left:     auto;
+	margin-right:    auto;
+	padding:         0px;
+	text-align:      center;
+}
+
+tr {
+	margin:  0px;
+	padding: 0px;
+}
+
+th {
+	margin:         0px;
+	padding:        0px;
+	font-weight:    bold;
+	vertical-align: middle;
+	text-align:     left;
+}
+
+td {
+	border:         0px solid yellow;
+	margin:         0px;
+	padding:        0px;
+	vertical-align: middle;
+	text-align:     center;
+}
+
+/* CLASSES */
+
+.form_input_number form {
+	width: 800px;
+}
+
+.form_input_number_3 input {
+	width: 80px;
+}
+
+.icon {
+	width:          30px;
+	height:         30px;
+	vertical-align: middle;
+	padding-right:  5px;
+}
+
+.leaderboard_728x90 {
+	background-color: #202020;
+	margin:           0px;
+	padding:          0px;
+	width:            728px;
+	height:           90px;
+	overflow:         hidden;
+	text-align:       left;
+	display:          inline-block;
+}
+
+.adsbygoogle {
+	display: inline-block;
+	width:   728px;
+	height:  90px;
+}
+
+/* ID's */
+
+#load_scene {
+	display: none;
+}
+
+#load_scene_label {
+	font-weight: bold;
+}
+
+#load_scene_label:hover {
+	cursor:          pointer;
+	text-decoration: underline;
+}
+
+#component_details {
+	background-color: #404040;
+	border:           1px solid white;
+	border-spacing:   0px;
+	border-radius:    5px;
+	padding:          5px;
+	overflow:         auto;
+	height:           320px;
+}
+
+#component_details td {
+	padding:    2px;
+	text-align: left;
+}
+
+#component_details th {
+	width: 120px;
+}
+
+#main {
+	background-color: #202020;
+	border:           1px solid white;
+	border-spacing:   0px;
+	border-radius:    5px;
+	width:            1400px;
+	margin-left:      auto;
+	margin-right:     auto;
+}
+
+#left_menu {
+	width:          100px;
+	text-align:     center;
+	vertical-align: top;
+	overflow-x:     hidden;
+	overflow-y:     hidden;
+}
+
+#right_menu {
+	width:          500px;
+	vertical-align: top;
+	text-align:     left;
+	padding:        10px 0px 10px 10px;
+}
+
+#webgl_td_canvas {
+	vertical-align: top;
+	padding-top:    10px;
+}
+
+#interactions th {
+	padding-right: 20px;
+}
+
+#interactions td {
+	text-align: left;
+}
+
+#render_settings table {
+	margin-left: 0px;
+}
+
+#render_settings td {
+	padding: 0px 30px 0px 10px;
+}
+
+#w3_validator_html a, a:hover {
+	text-decoration: none;
+}
+
+#w3_validator_html img {
+	vertical-align: middle;
+	border:         0px;
+	width:          63px;
+	height:         64px;
+}
+
+#w3_validator_css a:hover {
+	text-decoration: none;
+}
+
+#w3_validator_css img {
+	vertical-align: middle;
+	border:         0px;
+	width:          88px;
+	height:         31px;
+}
