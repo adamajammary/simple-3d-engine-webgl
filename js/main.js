@@ -77,14 +77,14 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
     ];
 
     $scope.interactions = [
-        { header: "Keyboard F5:",              data: "Resets the session, all unsaved work will be lost." },
-        { header: "Keyboard WASD:",            data: "Move forward / left / back / right." },
-        { header: "Mouse-Middle:",             data: "Rotate horizontal / vertical (yaw / pitch)." },
-        { header: "Mouse-Middle + CTRL-key:",  data: "Move forward / back." },
-        { header: "Mouse-Middle + SHIFT-key:", data: "Move horizontal / vertical." },
-        { header: "Mouse-Scroll:",             data: "Move forward / back." },
-        { header: "Mouse-Scroll + CTRL-key:",  data: "Move left / right." },
-        { header: "Mouse-Scroll + SHIFT-key:", data: "Move up / down." }
+        { header: "Keyboard F5:",                    data: "Resets the session, all unsaved work will be lost." },
+        { header: "Keyboard WASD:",                  data: "Move forward / left / back / right." },
+        { header: "Mouse Middle/Right:",             data: "Rotate horizontal / vertical (yaw / pitch)." },
+        { header: "Mouse Middle/Right + CTRL-key:",  data: "Move forward / back." },
+        { header: "Mouse Middle/Right + SHIFT-key:", data: "Move horizontal / vertical." },
+        { header: "Mouse Scroll:",                   data: "Move forward / back." },
+        { header: "Mouse Scroll + CTRL-key:",        data: "Move left / right." },
+        { header: "Mouse Scroll + SHIFT-key:",       data: "Move up / down." }
     ];
 
     $scope.resourcesTexts = [

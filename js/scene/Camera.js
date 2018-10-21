@@ -117,7 +117,7 @@ class Camera
             
             canvas.active = (event.target.id == "webgl_canvas");
 
-            if (canvas.active && (event.button == MouseButton.MIDDLE))
+            if (canvas.active && ((event.button == MouseButton.MIDDLE) || (event.button == MouseButton.RIGHT)))
             {
                 event.preventDefault();
 
