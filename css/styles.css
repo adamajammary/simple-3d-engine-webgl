@@ -173,7 +173,7 @@ td {
 	border-radius:    5px;
 	padding:          5px;
 	overflow:         auto;
-	height:           320px;
+	height:           440px;
 }
 
 #component_details td {
@@ -190,7 +190,7 @@ td {
 	border:           1px solid white;
 	border-spacing:   0px;
 	border-radius:    5px;
-	width:            1400px;
+	width:            1200px;
 	margin-left:      auto;
 	margin-right:     auto;
 }

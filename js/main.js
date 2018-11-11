@@ -8,7 +8,7 @@ app.config(['$compileProvider', function ($compileProvider) {
 app.controller('mainController', function($controller, $http, $rootScope, $scope)
 {
     $scope.appName           = "Simple 3D Engine (WebGL)";
-    $scope.appVersion        = "1.0.0";
+    $scope.appVersion        = "1.0.1";
     $scope.boundingVolumes   = [ "none", "box", "sphere" ];
     $scope.components        = [];
     $scope.copyright         = "\u00A9 2017 Adam A. Jammary";
@@ -19,7 +19,7 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
     $scope.selectedComponent = null;
     $scope.selectedChild     = null;
     $scope.state             = "";
-    $scope.tested            = "Tested on 64-bit Chrome v.64.0.3282.167 and Firefox v.58.0.2";
+    $scope.tested            = "Tested on Firefox v.63.0.1 (64-bit)";
 
     $scope.alignments = [
         "Top-Left",
@@ -129,33 +129,31 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
     ];
 
     /**
-     * @param {object} component 
+     * @param {Component} component 
      */
     $scope.addComponent = function(component)
     {
-        let children = component.Children();
-        
-        switch (component.Name()) {
+        switch (component.Name) {
         case "Camera":
             RenderEngine.Camera = component;
             break;
         case "HUD":
-            for (let hud of children)
+            for (let hud of component.Children)
                 RenderEngine.HUDs.push(hud);
             break;
         case "Skybox":
-            RenderEngine.Skybox = children[0];
+            RenderEngine.Skybox = component.Children[0];
             break;
         case "Terrain":
-            for (let terrain of children)
+            for (let terrain of component.Children)
                 RenderEngine.Terrains.push(terrain);
             break;
         case "Water":
-            for (let water of children)
+            for (let water of component.Children)
                 RenderEngine.Waters.push(water);
             break;
         default:
-            for (let mesh of children)
+            for (let mesh of component.Children)
                 RenderEngine.Renderables.push(mesh);
             break;
         }
@@ -181,10 +179,12 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
         $scope.selectedChild     = null;
 
         $scope.components.splice(1);
+
+        RenderEngine.Camera.UpdateProjection();
     }
 
     /**
-     * @param {object} component
+     * @param {Component} component
      */
     $scope.getComponentIndex = function(component)
     {
@@ -217,9 +217,9 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
     $scope.getTextures = function()
     {
         if ($scope.showTest7())
-            return $scope.selectedComponent.Textures();
+            return $scope.selectedComponent.Textures;
         else if ($scope.showTest2())
-            return $scope.selectedChild.Textures();
+            return $scope.selectedChild.Textures;
 
         return null;
     }
@@ -271,7 +271,7 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
      */
     $scope.isReadOnlyName = function()
     {
-        return (!$scope.selected.Parent() || ($scope.selected.Parent().Name() === "Skybox"));
+        return (!$scope.selected.Parent || ($scope.selected.Parent.Type() === ComponentType.SKYBOX));
     }
 
     /**
@@ -353,10 +353,8 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
             resource.result = result;
             $scope.state    = ("Loading " + resource.file + " ... OK");
 
-            if ($scope.isLoadComplete()) {
-                //setTimeout(function() { $scope.startEngine(); }, 10);
+            if ($scope.isLoadComplete())
                 $scope.startEngine();
-            }
         } else {
             $scope.state = ("Loading " + resource.file + " ... FAIL");
         }
@@ -394,11 +392,18 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
             // CAMERA
             if (sceneData.components[i].name === "Camera") {
                 component = RenderEngine.Camera;
-                component.SetPosition(Utils.ToFloatArray3(sceneData.components[i].position));
-                component.SetRotation(Utils.ToFloatArray3(sceneData.components[i].rotation));
+                component.MoveTo(Utils.ToFloatArray3(sceneData.components[i].position));
+                component.RotateTo(Utils.ToFloatArray3(sceneData.components[i].rotation));
             // HUD
             } else if (sceneData.components[i].name === "HUD") {
                 component = $scope.loadHUD();
+                component.SetTransparent(sceneData.components[i].transparent);
+                component.SetTextAlign(sceneData.components[i].text_align);
+                component.SetTextFont(sceneData.components[i].text_font);
+                component.SetTextSize(parseInt(sceneData.components[i].text_size));
+                component.SetTextColor(sceneData.components[i].text_color);
+
+                component.Update(sceneData.components[i].text);
             // MODEL
             } else if (sceneData.components[i].name === "Model") {
                 component = $scope.loadModel(sceneData.components[i].json);
@@ -410,9 +415,9 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
                 component = $scope.loadTerrain(parseFloat(sceneData.components[i].size), parseInt(sceneData.components[i].octaves), parseFloat(sceneData.components[i].redistribution));
             // WATER
             } else if (sceneData.components[i].name === "Water") {
-                component = $scope.loadWater();
-                component.FBO().SetSpeed(parseFloat(sceneData.components[i].speed));
-                component.FBO().SetWaveStrength(parseFloat(sceneData.components[i].wave_strength));
+                component                    = $scope.loadWater();
+                component.FBO().Speed        = parseFloat(sceneData.components[i].speed);
+                component.FBO().WaveStrength = parseFloat(sceneData.components[i].wave_strength);
             }
             // MATERIAL
             // LIGHTS
@@ -423,18 +428,18 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
                 if (!component || !sceneData.components[i].children[j])
                     continue;
 
-                let child = component.Child(j);
+                let child = component.Children[j];
 
                 if (!child)
                     continue;
 
-                child.SetName(sceneData.components[i].children[j].name);
-                child.SetPosition(Utils.ToFloatArray3(sceneData.components[i].children[j].position));
-                child.SetScale(Utils.ToFloatArray3(sceneData.components[i].children[j].scale));
-                child.SetRotation(Utils.ToFloatArray3(sceneData.components[i].children[j].rotation));
+                child.AutoRotate = sceneData.components[i].children[j].auto_rotate;
                 child.SetAutoRotation(Utils.ToFloatArray3(sceneData.components[i].children[j].auto_rotation));
-                child.SetAutoRotate(sceneData.components[i].children[j].auto_rotate);
                 child.SetColor(Utils.ToFloatArray4(sceneData.components[i].children[j].color));
+                child.SetName(sceneData.components[i].children[j].name);
+                child.MoveTo(Utils.ToFloatArray3(sceneData.components[i].children[j].position));
+                child.ScaleTo(Utils.ToFloatArray3(sceneData.components[i].children[j].scale));
+                child.RotateTo(Utils.ToFloatArray3(sceneData.components[i].children[j].rotation));
 
                 // TEXTURES
                 for (let k = 0; k < sceneData.components[i].children[j].nr_of_textures; k++)
@@ -443,17 +448,17 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
                         continue;
 
                     // TERRAIN, WATER
-                    if ((component.Name() === "Terrain") || (component.Name() === "Water"))
+                    if ((component.Type() === ComponentType.TERRAIN) || (component.Type() === ComponentType.WATER))
                     {
-                        let texture = (component.Name() === "Water" ? component.Texture(k) : child.Texture(k));
+                        let texture = (component.Type() === ComponentType.WATER ? component.FBO().Textures[k] : child.Textures[k]);
 
                         if (!texture)
                             continue;
 
-                        texture.SetScale(Utils.ToFloatArray2(sceneData.components[i].children[j].textures[k].scale));
+                        texture.ScaleTo(Utils.ToFloatArray2(sceneData.components[i].children[j].textures[k].scale));
                     }
                     // SKYBOX
-                    else if (component.Name() === "Skybox")
+                    else if (component.Type() === ComponentType.SKYBOX)
                     {
                         //
                     }
@@ -461,7 +466,7 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
                     else
                     {
                         // HUD
-                        if ((component.Name() === "HUD") && (k > 0))
+                        if ((component.Type() === ComponentType.HUD) && (k > 0))
                             continue;
 
                         let image = new Image();
@@ -657,7 +662,7 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
 
         if (index >= 0)
         {
-            let children = $scope.selectedComponent.Children();
+            let children = $scope.selectedComponent.Children;
 
             for (let mesh of children)
                 RenderEngine.RemoveMesh(mesh);
@@ -678,7 +683,7 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
 
         if ($scope.selectedComponent.RemoveChild($scope.selectedChild) === 0)
         {
-            if ($scope.selectedComponent.Children().length === 0)
+            if ($scope.selectedComponent.Children.length === 0)
                 $scope.removeSelectedComponent();
 
             $scope.selectedChild = null;
@@ -701,12 +706,12 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
             if (!component)
                 continue;
 
-            let children = component.Children();
+            let children = component.Children;
             
-            switch (component.Name()) {
+            switch (component.Name) {
             case "Camera":
                 sceneData.components[i] = {
-                    "name":           component.Name(),
+                    "name":           component.Name,
                     "position":       component.Position(),
                     "rotation":       component.Rotation(),
                     "nr_of_children": 0
@@ -714,19 +719,25 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
                 break;
             case "HUD":
                 sceneData.components[i] = {
-                    "name":           component.Name(),
+                    "name":           component.Name,
+                    "transparent":    component.Transparent(),
+                    "text":           component.Text(),
+                    "text_align":     component.TextAlign(),
+                    "text_font":      component.TextFont(),
+                    "text_size":      component.TextSize(),
+                    "text_color":     component.TextColor(),
                     "nr_of_children": children.length
                 }
                 break;
             case "Skybox":
                 sceneData.components[i] = {
-                    "name":           component.Name(),
+                    "name":           component.Name,
                     "nr_of_children": children.length
                 }
                 break;
             case "Terrain":
                 sceneData.components[i] = {
-                    "name":           component.Name(),
+                    "name":           component.Name,
                     "size":           component.Size(),
                     "octaves":        component.Octaves(),
                     "redistribution": component.Redistribution(),
@@ -735,15 +746,15 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
                 break;
             case "Water":
                 sceneData.components[i] = {
-                    "name":          component.Name(),
-                    "speed":         component.FBO().Speed(),
-                    "wave_strength": component.FBO().WaveStrength(),
+                    "name":           component.Name,
+                    "speed":          component.FBO().Speed,
+                    "wave_strength":  component.FBO().WaveStrength,
                     "nr_of_children": children.length
                 };
                 break;
             case "Model":
                 sceneData.components[i] = {
-                    "name":           component.Name(),
+                    "name":           component.Name,
                     "json":           component.JSON(),
                     "nr_of_children": children.length
                 };
@@ -754,7 +765,7 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
                 break;
             }
 
-            if (component.Name() === "Camera")
+            if (component.Type() === ComponentType.CAMERA)
                 continue;
 
             sceneData.components[i].children = {};
@@ -763,12 +774,12 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
             for (let j = 0; j < children.length; j++)
             {
                 sceneData.components[i].children[j] = {
-                    "name":            children[j].Name(),
+                    "name":            children[j].Name,
                     "position":        children[j].Position(),
                     "scale":           children[j].Scale(),
                     "rotation":        children[j].Rotation(),
                     "auto_rotation":   children[j].AutoRotation(),
-                    "auto_rotate":     children[j].AutoRotate(),
+                    "auto_rotate":     children[j].AutoRotate,
                     "color":           children[j].Color(),
                     "nr_of_textures":  Utils.MAX_TEXTURES
                 };
@@ -777,7 +788,7 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
 
                 for (let k = 0; k < Utils.MAX_TEXTURES; k++)
                 {
-                    let texture = (component.Name() === "Water" ? component.Texture(k) : children[j].Texture(k));
+                    let texture = (component.Type() === ComponentType.WATER ? component.FBO().Textures[k] : children[j].Textures[k]);
 
                     sceneData.components[i].children[j].textures[k] = {
                         "file":   texture.File(),
@@ -799,10 +810,12 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
 
         //localStorage.setItem("scene_url",  "data:text/plain;charset=utf-8,");
         //localStorage.setItem("scene_data", sceneData);
+
+        console.log($scope.sceneURL);
     }
 
     /**
-    * @param {object} component
+    * @param {Component} component
     */
     $scope.selectComponent = function(component)
     {
@@ -810,10 +823,8 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
         {
             $scope.selectedComponent = component;
             
-            let children = component.Children();
-
-            if (children.length > 0)
-                $scope.selectChild(children[0]);
+            if (!component.Children.length < 0)
+                $scope.selectChild(component.Children[0]);
             else
                 $scope.selectedChild = null;
 
@@ -822,7 +833,7 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
     }
 
     /**
-    * @param {object} child
+    * @param {Component} child
     */
     $scope.selectChild = function(child)
     {
@@ -838,85 +849,72 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
         $scope.state = state;
     }
 
-    /**
-     */
     $scope.showTest1 = function()
     {
         return (($scope.selectedChild != null) && ($scope.selectedChild !== undefined));
     }
 
-    /**
-     */
     $scope.showTest2 = function()
     {
-        return ($scope.selectedComponent && ($scope.selectedComponent.Name() != "Camera"));
+        return ($scope.selectedComponent && ($scope.selectedComponent.Type() !== ComponentType.CAMERA));
     }
 
-    /**
-     */
     $scope.showTest3 = function()
     {
-        return ($scope.selectedComponent && ($scope.selectedComponent.Name() != "Skybox"));
+        return ($scope.selectedComponent && ($scope.selectedComponent.Type() !== ComponentType.SKYBOX));
     }
 
-    /**
-     */
     $scope.showTest4 = function()
     {
         return (
             $scope.selectedComponent && 
-            ($scope.selectedComponent.Name() != "Camera") && 
-            ($scope.selectedComponent.Name() != "Skybox")
+            ($scope.selectedComponent.Type() !== ComponentType.CAMERA) && 
+            ($scope.selectedComponent.Type() !== ComponentType.SKYBOX)
         );
     }
 
-    /**
-     */
     $scope.showTest5 = function()
     {
         return (
             $scope.selectedComponent && 
-            ($scope.selectedComponent.Name() != "Skybox")  && 
-            ($scope.selectedComponent.Name() != "Terrain") && 
-            ($scope.selectedComponent.Name() != "Water")
+            ($scope.selectedComponent.Type() !== ComponentType.SKYBOX)  && 
+            ($scope.selectedComponent.Type() !== ComponentType.TERRAIN) && 
+            ($scope.selectedComponent.Type() !== ComponentType.WATER)
         );
     }
 
-    /**
-     */
     $scope.showTest6 = function()
     {
-        return ($scope.selectedComponent && ($scope.selectedComponent.Name() === "Terrain"));
+        return ($scope.selectedComponent && ($scope.selectedComponent.Type() === ComponentType.TERRAIN));
     }
 
-    /**
-     */
     $scope.showTest7 = function()
     {
-        return ($scope.selectedComponent && ($scope.selectedComponent.Name() === "Water"));
+        return ($scope.selectedComponent && ($scope.selectedComponent.Type() === ComponentType.WATER));
     }
 
-    /**
-     */
     $scope.showTest8 = function()
     {
-        return ($scope.selectedComponent && ($scope.selectedComponent.Name() === "HUD"));
+        return ($scope.selectedComponent && ($scope.selectedComponent.Type() === ComponentType.HUD));
     }
 
-    /**
-     */
     $scope.showTest9 = function()
     {
         return (
             $scope.selectedComponent && 
-            ($scope.selectedComponent.Name() != "Camera")  && 
-            ($scope.selectedComponent.Name() != "HUD")     && 
-            ($scope.selectedComponent.Name() != "Skybox")  && 
-            ($scope.selectedComponent.Name() != "Terrain") && 
-            ($scope.selectedComponent.Name() != "Water")
+            ($scope.selectedComponent.Type() !== ComponentType.CAMERA)  && 
+            ($scope.selectedComponent.Type() !== ComponentType.HUD)     && 
+            ($scope.selectedComponent.Type() !== ComponentType.SKYBOX)  && 
+            ($scope.selectedComponent.Type() !== ComponentType.TERRAIN) && 
+            ($scope.selectedComponent.Type() !== ComponentType.WATER)
         );
 
         //return (RenderEngine.Renderables.indexOf($scope.selectedComponent) >= 0);
+    }
+
+    $scope.showTest10 = function()
+    {
+        return ($scope.selectedComponent && ($scope.selectedComponent.Type() === ComponentType.CAMERA));
     }
 
     /**
@@ -1002,6 +1000,12 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
 
         $scope.addComponent(camera);
 
+        $scope.component = $scope.components[0];
+        $scope.child     = $scope.component.Children[0];
+
+        $scope.selectComponent($scope.component);
+        $scope.selectChild($scope.child);
+
         // INPUT MANAGER
         $scope.setState("Initializing the Input Manager ...");
 
@@ -1064,5 +1068,4 @@ app.controller('mainController', function($controller, $http, $rootScope, $scope
      * MAIN
      */
     $scope.loadResources();
-    
 });

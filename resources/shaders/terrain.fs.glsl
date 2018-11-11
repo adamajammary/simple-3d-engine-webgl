@@ -6,13 +6,6 @@
 
 const int MAX_TEXTURES = 6;
 
-struct Camera
-{
-	vec3  Position;
-	float Near;
-	float Far;
-};
-
 struct Light
 {
 	vec4  Color;
@@ -22,25 +15,26 @@ struct Light
 	float Shine;
 };
 
-varying vec3 fragmentNormal;
-varying vec4 fragmentPosition;
-varying vec2 fragmentTextureCoords;
+varying vec3 FragmentNormal;
+varying vec4 FragmentPosition;
+varying vec2 FragmentTextureCoords;
 
-uniform vec3      ambient;
-uniform bool      enableClipping;
-uniform vec3      clipMax;
-uniform vec3      clipMin;
-// uniform vec4             materialColor;
-// uniform bool             isTextured;
-uniform Light     sunLight;
+uniform vec3      Ambient;
+uniform bool      EnableClipping;
+uniform vec3      ClipMax;
+uniform vec3      ClipMin;
+uniform Light     SunLight;
+uniform sampler2D Textures[MAX_TEXTURES];
+uniform vec2      TextureScales[MAX_TEXTURES];	// tx = [ [x, y], [x, y], ... ];
+
 // uniform sampler2D        backgroundTexture;	// 0
 // uniform sampler2D        rTexture;			// 1
 // uniform sampler2D        gTexture;			// 2
 // uniform sampler2D        bTexture;			// 3
 // uniform sampler2D        blendMap;			// 4
-uniform sampler2D textures[MAX_TEXTURES];
 //uniform float     textureScales[MAX_TEXTURES];
-uniform vec2      textureScales[MAX_TEXTURES];	// tx = [ [x, y], [x, y], ... ];
+// uniform vec4             materialColor;
+// uniform bool             isTextured;
 
 // highp float rand(vec2 co)
 // {
@@ -55,7 +49,7 @@ uniform vec2      textureScales[MAX_TEXTURES];	// tx = [ [x, y], [x, y], ... ];
 
 void main()
 {
-	if (enableClipping)
+	/*if (enableClipping)
 	{
 		if ((fragmentPosition.x > clipMax.x) || (fragmentPosition.y > clipMax.y) || (fragmentPosition.z > clipMax.z)) {
 			discard;
@@ -112,5 +106,50 @@ void main()
 	//gl_FragColor = texture2D(textureSampler, fragmentTextureCoords);
 	//gl_FragColor = vec4((texelColor.rgb * lightIntensity), texelColor.a);
 	//gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-	//gl_FragColor = vec4(fragmentTextureCoords, 1.0, 1.0);
+	//gl_FragColor = vec4(fragmentTextureCoords, 1.0, 1.0);*/
+
+	if (EnableClipping)
+	{
+		vec4 p = FragmentPosition;
+
+		if ((p.x > ClipMax.x) || (p.y > ClipMax.y) || (p.z > ClipMax.z) || (p.x < ClipMin.x) || (p.y < ClipMin.y) || (p.z < ClipMin.z))
+			discard;
+	}
+
+	vec4  blendMapColor           = texture2D(Textures[4], FragmentTextureCoords);
+	float backgroundTextureAmount = (1.0 - (blendMapColor.r + blendMapColor.g + blendMapColor.b));
+	//vec2  tiledCoordinates        = (FragmentTextureCoords * TextureScales[0]);
+	vec2  tiledCoordinates        = vec2(FragmentTextureCoords.x * TextureScales[0].x, FragmentTextureCoords.y * TextureScales[0].y);
+	vec4  backgroundTextureColor  = (texture2D(Textures[0], tiledCoordinates) * backgroundTextureAmount);
+	vec4  rTextureColor           = (texture2D(Textures[1], tiledCoordinates) * blendMapColor.r);
+	vec4  gTextureColor           = (texture2D(Textures[2], tiledCoordinates) * blendMapColor.g);
+	vec4  bTextureColor           = (texture2D(Textures[3], tiledCoordinates) * blendMapColor.b);
+	vec4  totalColor              = (backgroundTextureColor + rTextureColor + gTextureColor + bTextureColor);
+
+	// LIGHT COLOR (PHONG REFLECTION)
+	//vec3 lightColor = max((Ambient + (SunLight.Color.rgb * dot(normalize(FragmentNormal), normalize(-SunLight.Direction)))), 0.0);
+	vec3 lightColor = (Ambient + (SunLight.Color.rgb * dot(normalize(FragmentNormal), normalize(-SunLight.Direction))));
+	gl_FragColor    = vec4((totalColor.rgb * lightColor), totalColor.a);
+
+	/*
+	// DEEP WATER
+	if (fragmentPosition.y < 0.1)
+		GL_FragColor = vec4((vec3(0.0, 0.0, rand(vec2(0.1, 0.5))) * lightColor), 1.0);
+	// WATER
+	else if (fragmentPosition.y < 0.15)
+		GL_FragColor = vec4((vec3(0.0, 0.0, rand(vec2(0.6, 1.0))) * lightColor), 1.0);
+	// SAND
+	else if (fragmentPosition.y < 0.3)
+		GL_FragColor = vec4((vec3(0.8, 0.7, 0.5) * lightColor), 1.0);
+	// GRASS
+	else if (fragmentPosition.y < 0.5)
+		GL_FragColor = vec4((vec3(0.0, rand(vec2(0.2, 1.0)), 0.0) * lightColor), 1.0);
+	// ROCK
+	else if (fragmentPosition.y < 0.7)
+		GL_FragColor = vec4((vec3(rand(vec2(0.4, 0.6)), rand(vec2(0.4, 0.6)), rand(vec2(0.4, 0.6))) * lightColor), 1.0);
+	// SNOW
+	else if (fragmentPosition.y < 0.95)
+		GL_FragColor = vec4((vec3(1.0, 1.0, 1.0) * lightColor), 1.0);
+	*/
 }
+

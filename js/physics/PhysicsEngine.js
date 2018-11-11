@@ -40,11 +40,11 @@ class PhysicsEngine
     {
         for (let model of scope.components)
         {
-            if (model.Name() === "Camera")
+            if (model.Type() === ComponentType.CAMERA)
                 continue;
 
-            for (let mesh of model.Children()) {
-                if (mesh && mesh.AutoRotate())
+            for (let mesh of model.Children) {
+                if (mesh && mesh.AutoRotate)
                     mesh.Rotate(mesh.AutoRotation());
             }
         }

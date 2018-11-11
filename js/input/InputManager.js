@@ -4,9 +4,6 @@
 */
 class InputManager
 {
-    /**
-     * 
-     */
     static Init()
     {
         document.addEventListener("keydown",   InputManager.InputKeyboard);

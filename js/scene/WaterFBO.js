@@ -9,33 +9,16 @@ class WaterFBO
     */
     constructor(images)
     {
-        //
-        // PRIVATE
-        //
+        let gl            = RenderEngine.GLContext();
+        let moveFactor    = 0.0;
+        let reflectionFBO = null;
+        let refractionFBO = null;
 
-        var gl            = RenderEngine.GLContext();
-        var moveFactor    = 0.0;
-        var reflectionFBO = null;
-        var refractionFBO = null;
-        var speed         = 0.05;
-        var textures      = [ null, null, null, null, null, null ];
-        var waveStrength  = 0.05;
-        
-        //
-        // PUBLIC
-        //
-        
-        /**
-         * 
-         */
         this.BindReflection = function()
         {
             reflectionFBO.Bind();
         }
         
-        /**
-         * 
-         */
         this.BindRefraction = function()
         {
             refractionFBO.Bind();
@@ -46,81 +29,30 @@ class WaterFBO
         */
         this.MoveFactor = function()
         {
-            moveFactor += (speed * TimeManager.DeltaTime);
+            moveFactor += (this.Speed * TimeManager.DeltaTime);
         	moveFactor  = (moveFactor >= 1.0 ? 0.0 : moveFactor);
 
             return moveFactor;
         }
 
-        /**
-        * @param {number} newSpeed
-        */
-        this.SetSpeed = function(newSpeed)
-        {
-            speed = newSpeed;
-        }
-
-        /**
-        * @param {number} newStrength
-        */
-        this.SetWaveStrength = function(newStrength)
-        {
-            waveStrength = newStrength;
-        }
-
-        /**
-        * @return {number}
-        */
-        this.Speed = function()
-        {
-            return speed;
-        }
-
-        /**
-        * @return {number}
-        */
-        this.WaveStrength = function()
-        {
-            return waveStrength;
-        }
-
-        /**
-        * @param  {number} index
-        * @return {object}
-        */
-        this.Texture = function(index)
-        {
-            return textures[index];
-        }
-
-        /**
-        * @return {Array<object>}
-        */
-        this.Textures = function()
-        {
-            return textures;
-        }
-        
-        /**
-         * 
-         */
         this.UnbindReflection = function()
         {
             reflectionFBO.Unbind();
         }
         
-        /**
-         * 
-         */
         this.UnbindRefraction = function()
         {
             refractionFBO.Unbind();
         }
+
+        /**
+         * MAIN
+         */
         
-        //
-        // MAIN
-        //
-        
+        this.Speed        = 0.05;
+        this.WaveStrength = 0.05;
+        this.Textures     = [ null, null, null, null, null, null ];
+
         // WATER REFLECTION - ABOVE WATER
         reflectionFBO = new FrameBuffer(320, (320.0 * RenderEngine.AspectRatio)); // 180
         reflectionFBO.AttachRenderBuffer(gl.DEPTH_COMPONENT32F, gl.DEPTH_ATTACHMENT);
@@ -132,13 +64,13 @@ class WaterFBO
         refractionFBO.CreateDepthTexture();
 
         // TEXTURES
-        textures[0] = reflectionFBO.ColorTexture();
-        textures[1] = refractionFBO.ColorTexture();
-        textures[2] = new Texture(images[0], "duDvMap.png",   false, true);
-        textures[3] = new Texture(images[1], "normalMap.png", false, true);
-        textures[4] = refractionFBO.DepthTexture();
+        this.Textures[0] = reflectionFBO.ColorTexture();
+        this.Textures[1] = refractionFBO.ColorTexture();
+        this.Textures[2] = new Texture(images[0], "duDvMap.png",   false, true);
+        this.Textures[3] = new Texture(images[1], "normalMap.png", false, true);
+        this.Textures[4] = refractionFBO.DepthTexture();
 
         for (var i = 5; i < Utils.MAX_TEXTURES; i++)
-            textures[i] = Utils.EmptyTexture;
+            this.Textures[i] = Utils.EmptyTexture;
     }
 }

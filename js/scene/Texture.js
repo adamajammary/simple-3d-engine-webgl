@@ -18,113 +18,14 @@ class Texture
     */
     constructor(image, file, cubeMap = false, repeat = false, flipY = false, scale = [ 1.0, 1.0 ], depth = false, color = false, width = 100, height = 100)
     {
-        //
-        // PRIVATE
-        //
+        let gl   = RenderEngine.GLContext();
+        let id   = null;
+        let type = null;
 
-        var id = null;
-        var type;
+        init();
 
-        //
-        // PUBLIC
-        //
-
-        /**
-        * @return {string}
-        */
-        this.File = function()
+        function init()
         {
-            return file;
-        }
-
-        /**
-        * @return {boolean}
-        */
-        this.FlipY = function()
-        {
-            return flipY;
-        }
-
-        /**
-        * @return {object}
-        */
-        this.ID = function()
-        {
-            return id;
-        }
-
-        /**
-        * 2D Texture source
-        * @return {string}
-        */
-        this.ImageSource = function()
-        {
-            return (image ? image.src : "");
-        }
-
-        /**
-        * 2D Texture image
-        * @return {object}
-        */
-        this.Image = function()
-        {
-            return (image ? image : null);
-        }
-
-        /**
-        * @return {boolean}
-        */
-        this.Repeat = function()
-        {
-            return repeat;
-        }
-
-        /**
-        * @return {Array<number>}
-        */
-        this.Scale = function()
-        {
-            return scale;
-        }
-
-        /**
-        * @param {Array<number>} newScale
-        */
-        this.SetScale = function(newScale)
-        {
-            if (!isNaN(parseFloat(newScale[0])) && !isNaN(parseFloat(newScale[1]))) {
-                scale = newScale;
-            }
-        }
-
-        this.SetFlipY = function(newFlipY)
-        {
-            flipY = newFlipY;
-            create();
-        }
-
-        this.SetRepeat = function(newRepeat)
-        {
-            repeat = newRepeat;
-            create();
-        }
-
-        /**
-        * @return {number}
-        */
-        this.Type = function()
-        {
-            return type;
-        }
-
-        //
-        // PRIVATE
-        //
-
-        function create()
-        {
-            var gl = RenderEngine.GLContext();
-
             id = gl.createTexture();
 
             if (!id) {
@@ -208,10 +109,92 @@ class Texture
             return 0;
         }
         
-        //
-        // MAIN
-        //
+        /**
+        * @return {string}
+        */
+        this.File = function()
+        {
+            return file;
+        }
 
-        create();
+        /**
+        * @return {boolean}
+        */
+        this.FlipY = function()
+        {
+            return flipY;
+        }
+
+        /**
+        * @return {object}
+        */
+        this.ID = function()
+        {
+            return id;
+        }
+
+        /**
+        * 2D Texture source
+        * @return {string}
+        */
+        this.ImageSource = function()
+        {
+            return (image ? image.src : "");
+        }
+
+        /**
+        * 2D Texture image
+        * @return {object}
+        */
+        this.Image = function()
+        {
+            return (image ? image : null);
+        }
+
+        /**
+        * @return {boolean}
+        */
+        this.Repeat = function()
+        {
+            return repeat;
+        }
+
+        /**
+        * @return {Array<number>}
+        */
+        this.Scale = function()
+        {
+            return scale;
+        }
+
+        /**
+        * @param {Array<number>} newScale
+        */
+        this.ScaleTo = function(newScale)
+        {
+            if (!isNaN(parseFloat(newScale[0])) && !isNaN(parseFloat(newScale[1]))) {
+                scale = newScale;
+            }
+        }
+
+        this.SetFlipY = function(newFlipY)
+        {
+            flipY = newFlipY;
+            init();
+        }
+
+        this.SetRepeat = function(newRepeat)
+        {
+            repeat = newRepeat;
+            init();
+        }
+
+        /**
+        * @return {number}
+        */
+        this.Type = function()
+        {
+            return type;
+        }
     }
 }

@@ -6,13 +6,6 @@
 
 const int MAX_TEXTURES = 6;
 
-struct Camera
-{
-	vec3  Position;
-	float Near;
-	float Far;
-};
-
 struct Light
 {
 	vec4  Color;
@@ -22,24 +15,24 @@ struct Light
 	float Shine;
 };
 
-varying vec3 fragmentNormal;
-varying vec4 fragmentPosition;
-varying vec2 fragmentTextureCoords;
+varying vec3 FragmentNormal;
+varying vec4 FragmentPosition;
+varying vec2 FragmentTextureCoords;
 
-uniform vec3      ambient;
-uniform bool      enableClipping;
-uniform vec3      clipMax;
-uniform vec3      clipMin;
-uniform bool      isTextured;
-uniform vec4      materialColor;
-uniform Light     sunLight;
-uniform sampler2D textures[MAX_TEXTURES];
+uniform vec3      Ambient;
+uniform bool      EnableClipping;
+uniform vec3      ClipMax;
+uniform vec3      ClipMin;
+uniform bool      IsTextured;
+uniform vec4      MaterialColor;
+uniform Light     SunLight;
+uniform sampler2D Textures[MAX_TEXTURES];
 //uniform float     textureScales[MAX_TEXTURES];
-uniform vec2      textureScales[MAX_TEXTURES];	// tx = [ [x, y], [x, y], ... ];
+uniform vec2      TextureScales[MAX_TEXTURES];	// tx = [ [x, y], [x, y], ... ];
 
 void main()
 {
-	if (enableClipping)
+	/*if (enableClipping)
 	{
 		if ((fragmentPosition.x > clipMax.x) || (fragmentPosition.y > clipMax.y) || (fragmentPosition.z > clipMax.z)) {
 			discard;
@@ -71,5 +64,26 @@ void main()
 	//gl_FragColor = texture2D(textureSampler, fragmentTextureCoords);
 	//gl_FragColor = vec4((texelColor.rgb * lightIntensity), texelColor.a);
 	//gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-	//gl_FragColor = vec4(fragmentTextureCoords, 1.0, 1.0);
+	//gl_FragColor = vec4(fragmentTextureCoords, 1.0, 1.0);*/
+
+	if (EnableClipping)
+	{
+		vec4 p = FragmentPosition;
+
+		if ((p.x > ClipMax.x) || (p.y > ClipMax.y) || (p.z > ClipMax.z) || (p.x < ClipMin.x) || (p.y < ClipMin.y) || (p.z < ClipMin.z))
+			discard;
+	}
+
+	vec2 tiledCoordinates = vec2(FragmentTextureCoords.x * TextureScales[0].x, FragmentTextureCoords.y * TextureScales[0].y);
+
+	// LIGHT COLOR (PHONG REFLECTION)
+	vec3 lightColor = (Ambient + (SunLight.Color.rgb * dot(normalize(FragmentNormal), normalize(-SunLight.Direction))));
+
+	// TEXTURE
+	if (IsTextured) {
+		vec4 texelColor = texture2D(Textures[0], tiledCoordinates);
+		gl_FragColor    = vec4((texelColor.rgb * lightColor), texelColor.a);
+	} else {
+		gl_FragColor = vec4((MaterialColor.rgb * lightColor), MaterialColor.a);
+	}	
 }

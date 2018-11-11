@@ -2,7 +2,7 @@
 * Camera
 * @class
 */
-class Camera
+class Camera extends Component
 {
     /**
     * @param {Array<number>} position
@@ -13,51 +13,15 @@ class Camera
     */
     constructor(position, lookAt, fovRadians, near, far)
     {
-        //
-        // PRIVATE
-        //
-
-        var forward    = vec3.create();
-        var name       = "Camera";
-        var right      = vec3.create();
-        var pitch      = 0.0;
-        var yaw        = -(Math.PI / 2.0);
-        var mouseState = new MouseState();
-        var type       = ComponentType.CAMERA;
-
-        /**
-        * @param {Array<number>} position
-        * @param {Array<number>} lookAt
-        */
-        function init(position, lookAt)
-        {
-            vec3.subtract(forward, lookAt, position);
-            vec3.normalize(forward, forward);
-            
-            vec3.cross(right, vec3.fromValues(0.0, 1.0, 0.0), forward);
-            vec3.normalize(right, right);
-        }
+        super("Camera", position);
         
-        //
-        // PUBLIC
-        //
-
-        /**
-        * @param  {number}
-        * @return {object}
-        */
-        this.Child = function(index)
-        {
-            return this;
-        }
-
-        /**
-        * @return {Array<object>}
-        */
-        this.Children = function()
-        {
-            return [ this ];
-        }
+        let forward    = vec3.create();
+        let right      = vec3.create();
+        let pitch      = 0.0;
+        let yaw        = -(Math.PI / 2.0);
+        let mouseState = new MouseState();
+        let projection = mat4.create();
+        let view       = mat4.create();
 
         /**
         * @return {number}
@@ -105,7 +69,7 @@ class Camera
                 break;
             }
 
-            this.Move(moveVector);
+            this.MoveBy(moveVector);
         }
 
         /**
@@ -149,17 +113,19 @@ class Camera
                 vec3.cross(moveVector, forward, vec3.fromValues(0.0, 1.0, 0.0));
                 vec3.normalize(moveVector, moveVector);
                 vec3.multiply(moveVector, moveVector, moveAmountX);
-                this.Move(moveVector);
-                this.Move([ 0.0, moveModifier.y, 0.0 ]);
+
+                this.MoveBy(moveVector);
+                this.MoveBy([ 0.0, moveModifier.y, 0.0 ]);
             }
             // MOVE/PAN FORWARD/BACK (Z)
             else if (event.ctrlKey)
             {
                 vec3.multiply(moveVector, forward, moveAmountY);
-                this.Move(moveVector);
+
+                this.MoveBy(moveVector);
             // ROTATE HORIZONTAL/VERTICAL (YAW/PITCH)
             } else {
-                this.Rotate([ (moveModifier.x * 0.01), -(moveModifier.y * 0.01), 0.0 ]);
+                this.RotateBy([ (moveModifier.x * 0.01), -(moveModifier.y * 0.01), 0.0 ]);
             }
         }
 
@@ -178,7 +144,7 @@ class Camera
 
                 // UP / DOWN (Y)
                 if (event.shiftKey) {
-                    this.Move([ 0.0, -(event.deltaY * TimeManager.DeltaTime * 1.0), 0.0 ]);
+                    moveVector = vec3.fromValues([ 0.0, moveModifier, 0.0 ]);
                 }
                 // LEFT / RIGHT (X)
                 else if (event.ctrlKey)
@@ -191,7 +157,7 @@ class Camera
                     vec3.multiply(moveVector, forward, moveAmount);
                 }
 
-                this.Move(moveVector);
+                this.MoveBy(moveVector);
             }
         }
 
@@ -202,17 +168,18 @@ class Camera
         {
             document.exitPointerLock = (document.exitPointerLock || document.mozExitPointerLock || document.webkitExitPointerLock || document.msExitPointerLock);
             document.exitPointerLock();
-            
+
             mouseState.Drag = false;
         }
 
         this.InvertPitch = function()
         {
             pitch = -pitch;
+            this.RotateTo(vec3.fromValues(yaw, pitch, 0.0));
         }
 
         /**
-        * @param {<Array<number>} lookAt
+        * @param {Array<number>} lookAt
         */
         this.LookAt = function()
         {
@@ -223,24 +190,47 @@ class Camera
         * Moves by amount
         * @param {Array<number>} amount
         */
-        this.Move = function(amount)
+        this.MoveBy = function(amount)
         {
             if (!isNaN(parseFloat(amount[0])) &&
                 !isNaN(parseFloat(amount[1])) &&
                 !isNaN(parseFloat(amount[2])))
             {
-                position = vec3.add(position, position, amount);
+                this.position = vec3.add(this.position, this.position, amount);
+                this.updatePosition();
             }
         }
 
         /**
-        * @return {string}
+        * Moves to new position
+        * @param {Array<number>} newPosition
         */
-        this.Name = function()
+        this.MoveTo = function(newPosition)
         {
-            return name;
+            if (!isNaN(parseFloat(newPosition[0])) &&
+                !isNaN(parseFloat(newPosition[1])) &&
+                !isNaN(parseFloat(newPosition[2])))
+            {
+                this.position = newPosition;
+                this.updatePosition();
+            }
         }
+        
+        /**
+        * @param  {Array<number>} model
+        * @param  {boolean}       removeTranslation
+        * @return {Array<number>} Model View Projection matrix
+        */
+        this.MVP = function(model, removeTranslation = false)
+        {
+            let mvp = mat4.create();
 
+            mat4.multiply(mvp, this.View(removeTranslation), model);
+            mat4.multiply(mvp, projection, mvp);
+
+            return mvp;
+        }
+        
         /**
         * @return {number}
         */
@@ -250,54 +240,50 @@ class Camera
         }
 
         /**
-        * @return {object}
-        */
-        this.Parent = function()
-        {
-            return null;
-        }
-
-        /**
-        * @return {<Array<number>}
-        */
-        this.Position = function()
-        {
-            return position;
-        }
-
-        /**
         * Rotate by amount in radians
         * @param {Array<number>} amountRadians
         */
-        this.Rotate = function(amountRadians)
+        this.RotateBy = function(amountRadians)
         {
             if (!isNaN(parseFloat(amountRadians[0])) &&
                 !isNaN(parseFloat(amountRadians[1])))
             {
                 yaw   += amountRadians[0];
                 pitch += amountRadians[1];
+
+                this.updateRotation();
             }
         }
 
         /**
+        * Set new rotation in radians
+        * @param {Array<number>} newRotationRadians
+        */
+        this.RotateTo = function(newRotationRadians)
+        {
+            if (!isNaN(parseFloat(newRotationRadians[0])) &&
+                !isNaN(parseFloat(newRotationRadians[1])))
+            {
+                yaw   = newRotationRadians[0];
+                pitch = newRotationRadians[1];
+
+                this.updateRotation();
+            }
+        }
+        
+        /**
         * @return {<Array<number>}
         */
-        this.Rotation = function()
+        /*this.Rotation = function()
         {
             return [ yaw, pitch, 0.0 ];
-        }
+        }*/
 
         /**
-        * Projection Matrix
-        * @return {Array<Array<number>>}
+        * @return {Array<number>} Projection matrix
         */
         this.Projection = function()
         {
-            var canvas     = RenderEngine.Canvas();
-            var projection = mat4.create();
-
-            mat4.perspective(projection, fovRadians, (canvas.width / canvas.height), near, far);
-
             return projection;
         }
 
@@ -308,79 +294,75 @@ class Camera
         {
             var index  = (angleRadians.indexOf(':') + 1);
             fovRadians = parseFloat(index > 0 ? angleRadians.substr(index) : angleRadians);
+
+            this.UpdateProjection();
         }
 
-        /**
-        * @param {string} newName
-        */
-        this.SetName = function(newName)
+        this.UpdateProjection = function()
         {
-            name = newName;
+            let aspectRatio = (RenderEngine.Canvas().width / RenderEngine.Canvas().height);
+            mat4.perspective(projection, fovRadians, aspectRatio, near, far);
         }
 
-        /**
-        * @param {<Array<number>} newPosition
-        */
-        this.SetPosition = function(newPosition)
+        this.updatePosition = function()
         {
-            if (!isNaN(parseFloat(newPosition[0])) &&
-                !isNaN(parseFloat(newPosition[1])) &&
-                !isNaN(parseFloat(newPosition[2])))
-            {
-                position = newPosition;
-            }
+            let center = vec3.create();
+            vec3.add(center, this.position, forward);
+            mat4.lookAt(view, this.position, center, vec3.fromValues(0.0, 1.0, 0.0));
         }
 
-        /**
-        * Set Rotation in radians
-        * @param {Array<number>} newRotationRadians
-        */
-        this.SetRotation = function(newRotationRadians)
+        this.updateRotation = function()
         {
-            if (!isNaN(parseFloat(newRotationRadians[0])) &&
-                !isNaN(parseFloat(newRotationRadians[1])))
-            {
-                yaw   = newRotationRadians[0];
-                pitch = newRotationRadians[1];
-            }
-        }
-
-        /**
-        * @return {number}
-        */
-        this.Type = function()
-        {
-            return type;
-        }
-
-        /**
-        * View Matrix
-        * @return {Array<Array<number>>}
-        */
-        this.View = function()
-        {
-            var view = mat4.create();
-
             // https://learnopengl.com/#!Getting-started/Camera
-            pitch = Math.max(Math.min(pitch, (Math.PI / 2.0)), -(Math.PI / 2.0));
+            pitch         = Math.max(Math.min(pitch, (Math.PI / 2.0)), -(Math.PI / 2.0));
+            this.rotation = vec3.fromValues(yaw, pitch, 0.0);
             
-            var center = vec3.create();
-
-            center[0] = Math.cos(pitch) * Math.cos(yaw);
-            center[1] = Math.sin(pitch);
-            center[2] = Math.cos(pitch) * Math.sin(yaw);
+            let center = vec3.fromValues(
+                Math.cos(pitch) * Math.cos(yaw),    // X
+                Math.sin(pitch),                    // Y
+                Math.cos(pitch) * Math.sin(yaw)     // Z
+            );
             
             vec3.normalize(forward, center);
-            vec3.add(center, position, forward);
-            mat4.lookAt(view, position, center, vec3.fromValues(0.0, 1.0, 0.0));
-            
+
+            vec3.add(center, this.position, forward);
+            mat4.lookAt(view, this.position, center, vec3.fromValues(0.0, 1.0, 0.0));
+        }
+
+        /**
+        * @param  {boolean}       removeTranslation
+        * @return {Array<number>} View matrix
+        */
+        this.View = function(removeTranslation = false)
+        {
+            // http://math.hws.edu/graphicsbook/c3/s5.html
+            if (removeTranslation)
+            {
+                return mat4.fromValues(
+                    view[0],  view[1],  view[2],  0.0,  // COLUMN 0
+                    view[4],  view[5],  view[6],  0.0,  // COLUMN 1
+                    view[8],  view[9],  view[10], 0.0,  // COLUMN 2
+                    0.0,      0.0,      0.0,      1.0   // COLUMN 3
+                );
+            }
+
             return view;
         }
 
-        //
-        // MAIN
-        //
+        /**
+        * MAIN
+        */
+        this.Children = [ this ];
+        this.type     = ComponentType.CAMERA;
+
+        vec3.subtract(forward, lookAt, position);
+        vec3.normalize(forward, forward);
         
-        init(position, lookAt);
+        vec3.cross(right, vec3.fromValues(0.0, 1.0, 0.0), forward);
+        vec3.normalize(right, right);
+        
+        this.UpdateProjection();
+        this.updatePosition();
+        this.updateRotation();
     }
 }

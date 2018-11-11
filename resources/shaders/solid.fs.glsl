@@ -4,9 +4,9 @@
 	precision mediump float;
 #endif
 
-uniform vec4 solidColor;
+uniform vec4 Color;
 
 void main()
 {
-	gl_FragColor = solidColor;
+	gl_FragColor = Color;
 }

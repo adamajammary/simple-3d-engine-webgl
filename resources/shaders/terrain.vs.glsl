@@ -1,23 +1,29 @@
-attribute vec3 vertexNormal;
-attribute vec3 vertexPosition;
-attribute vec2 vertexTextureCoords;
+attribute vec3 VertexNormal;
+attribute vec3 VertexPosition;
+attribute vec2 VertexTextureCoords;
 
-varying   vec3 fragmentNormal;
-varying   vec4 fragmentPosition;
-varying   vec2 fragmentTextureCoords;
+varying vec3 FragmentNormal;
+varying vec4 FragmentPosition;
+varying vec2 FragmentTextureCoords;
 
-uniform   float clipHeight;
-uniform   mat4  matrixModel; // World/Model
-uniform   mat4  matrixView;  // Camera/View
-uniform   mat4  matrixProjection;
+uniform mat4 MatrixModel;
+uniform mat4 MatrixView;
+uniform mat4 MatrixProjection;
+uniform mat4 MatrixMVP;
 
 void main()
 {
-    vec4 worldPosition = (matrixModel * vec4(vertexPosition, 1.0));
+    /*vec4 worldPosition = (matrixModel * vec4(vertexPosition, 1.0));
 
     fragmentNormal        = (matrixModel * vec4(vertexNormal, 0.0)).xyz;
     fragmentPosition      = worldPosition;
     fragmentTextureCoords = vertexTextureCoords;
 
-    gl_Position = (matrixProjection * matrixView * worldPosition);
+    gl_Position = (matrixProjection * matrixView * worldPosition);*/
+
+    FragmentNormal        = (MatrixModel * vec4(VertexNormal, 0.0)).xyz;
+    FragmentPosition      = (MatrixModel * vec4(VertexPosition, 1.0));
+    FragmentTextureCoords = VertexTextureCoords;
+
+	gl_Position = (MatrixMVP * vec4(VertexPosition, 1.0));	
 }

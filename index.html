@@ -11,14 +11,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
     <script src="js/globals.js"></script>
-    <!--<script src="js/ai/AIEngine.js"></script>-->
-    <!--<script src="js/audio/AudioEngine.js"></script>-->
-    <!--<script src="js/font/FontEngine.js"></script>-->
-    <!--<script src="js/network/NetworkEngine.js"></script>-->
-    <!--<script src="js/scene/Component.js"></script>-->
-    <!--<script src="js/scene/Light.js"></script>-->
-    <!--<script src="js/scene/Scene.js"></script>-->
-    <!--<script src="js/scene/SceneManager.js"></script>-->
     <script src="js/input/InputManager.js"></script>
     <script src="js/physics/RayCast.js"></script>
     <script src="js/physics/PhysicsEngine.js"></script>
@@ -26,10 +18,11 @@
     <script src="js/render/ShaderManager.js"></script>
     <script src="js/render/ShaderProgram.js"></script>
     <script src="js/scene/Buffer.js"></script>
-    <script src="js/scene/Camera.js"></script>
     <script src="js/scene/FrameBuffer.js"></script>
-    <script src="js/scene/HUD.js"></script>
+    <script src="js/scene/Component.js"></script>
     <script src="js/scene/Mesh.js"></script>
+    <script src="js/scene/Camera.js"></script>
+    <script src="js/scene/HUD.js"></script>
     <script src="js/scene/Model.js"></script>
     <script src="js/scene/Skybox.js"></script>
     <script src="js/scene/Terrain.js"></script>
@@ -39,6 +32,13 @@
     <script src="js/system/Utils.js"></script>
     <script src="js/time/TimeManager.js"></script>
     <script src="js/main.js"></script>
+    <!--<script src="js/ai/AIEngine.js"></script>-->
+    <!--<script src="js/audio/AudioEngine.js"></script>-->
+    <!--<script src="js/font/FontEngine.js"></script>-->
+    <!--<script src="js/network/NetworkEngine.js"></script>-->
+    <!--<script src="js/scene/Light.js"></script>-->
+    <!--<script src="js/scene/Scene.js"></script>-->
+    <!--<script src="js/scene/SceneManager.js"></script>-->
 </head>
 
 <body>
@@ -52,6 +52,7 @@
         </ins>
         <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
+    <!--
     <div class="leaderboard_728x90">
         <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
         <ins
@@ -62,6 +63,7 @@
         </ins>
         <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
+    -->
     <p>{{ appName }} v.{{ appVersion }} - {{ GPU }} - {{ FPS }} FPS</p>
     <div id="main">
     <table>
@@ -132,7 +134,7 @@
     </tr>
     <tr>
     <td id="webgl_td_canvas">
-        <canvas id="webgl_canvas" width="800" height="450">
+        <canvas id="webgl_canvas" width="640" height="360" oncontextmenu="return false">
             Your browser does not support HTML5!
         </canvas>
         <br />
@@ -168,26 +170,28 @@
             id="selected_component"
             style="width:49%"
             size="5"
-            data-ng-options="c.Name() for c in components"
+            data-ng-options="c.Name for c in components"
             data-ng-model="component"
-            data-ng-change="selectComponent(component); child = component.Children()[0];">
+            data-ng-change="selectComponent(component); child = component.Children[0]; selectChild(child);"
+            >
             <option style="display:none" value="">Components</option>
         </select>
         <select
             id="selected_child"
             style="width:49%"
             size="5"
-            data-ng-options="c2.Name() for c2 in component.Children()"
+            data-ng-options="c2.Name for c2 in component.Children"
             data-ng-model="child"
             data-ng-change="selectChild(child)">
+            <option style="display:none" value="">Children</option>
         </select>
         <br />
         <br />
         <div id="component_details">
         <div data-ng-show="showTest1()">
             <p style="text-align:center" data-ng-show="showTest2()">
-                <button data-ng-click="removeSelectedComponent()">REMOVE {{ selectedComponent.Name() }}</button>
-                <button data-ng-click="removeSelectedChild()">REMOVE {{ selectedChild.Name() }}</button>
+                <button data-ng-click="removeSelectedComponent()">REMOVE {{ selectedComponent.Name }}</button>
+                <button data-ng-click="removeSelectedChild()">REMOVE {{ selectedChild.Name }}</button>
             </p>
             <br data-ng-show="!showTest2()" />
             <table>
@@ -197,9 +201,10 @@
                 <input
                     type="text"
                     size="38"
-                    data-ng-value="selectedChild.Name()"
+                    data-ng-readonly="showTest10()"
+                    data-ng-value="selectedChild.Name"
                     data-ng-model="name"
-                    data-ng-change="selectedChild.SetName(name)"
+                    data-ng-change="selectedChild.SetName(name); name = selectedChild.Name;"
                 />
             </td>
             </tr>
@@ -215,7 +220,7 @@
                     step="0.01"
                     data-ng-model="location_x"
                     data-ng-value="selectedChild.Position()[0]"
-                    data-ng-change="selectedChild.SetPosition([ location_x, selectedChild.Position()[1], selectedChild.Position()[2] ])"
+                    data-ng-change="selectedChild.MoveTo([ location_x, selectedChild.Position()[1], selectedChild.Position()[2] ])"
                 />
                 Y
                 <input
@@ -223,7 +228,7 @@
                     step="0.01"
                     data-ng-model="location_y"
                     data-ng-value="selectedChild.Position()[1]"
-                    data-ng-change="selectedChild.SetPosition([ selectedChild.Position()[0], location_y, selectedChild.Position()[2] ])"
+                    data-ng-change="selectedChild.MoveTo([ selectedChild.Position()[0], location_y, selectedChild.Position()[2] ])"
                 />
                 Z
                 <input
@@ -231,7 +236,7 @@
                     step="0.01"
                     data-ng-model="location_z"
                     data-ng-value="selectedChild.Position()[2]"
-                    data-ng-change="selectedChild.SetPosition([ selectedChild.Position()[0], selectedChild.Position()[1], location_z ])"
+                    data-ng-change="selectedChild.MoveTo([ selectedChild.Position()[0], selectedChild.Position()[1], location_z ])"
                 />
                 </form>
             </td>
@@ -247,7 +252,7 @@
                     step="0.01"
                     data-ng-model="rotation_x"
                     data-ng-value="selectedChild.Rotation()[0]"
-                    data-ng-change="selectedChild.SetRotation([ rotation_x, selectedChild.Rotation()[1], selectedChild.Rotation()[2] ])"
+                    data-ng-change="selectedChild.RotateTo([ rotation_x, selectedChild.Rotation()[1], selectedChild.Rotation()[2] ])"
                 />
                 Y
                 <input
@@ -255,7 +260,7 @@
                     step="0.01"
                     data-ng-model="rotation_y"
                     data-ng-value="selectedChild.Rotation()[1]"
-                    data-ng-change="selectedChild.SetRotation([ selectedChild.Rotation()[0], rotation_y, selectedChild.Rotation()[2] ])"
+                    data-ng-change="selectedChild.RotateTo([ selectedChild.Rotation()[0], rotation_y, selectedChild.Rotation()[2] ])"
                 />
                 Z
                 <input
@@ -263,8 +268,8 @@
                     step="0.01"
                     data-ng-model="rotation_z"
                     data-ng-value="selectedChild.Rotation()[2]"
-                    data-ng-change="selectedChild.SetRotation([ selectedChild.Rotation()[0], selectedChild.Rotation()[1], rotation_z ])"
-                    data-ng-readonly="selectedChild.Name() === 'Camera'"
+                    data-ng-change="selectedChild.RotateTo([ selectedChild.Rotation()[0], selectedChild.Rotation()[1], rotation_z ])"
+                    data-ng-readonly="selectedChild.Name === 'Camera'"
                 />
                 </form>
             </td>
@@ -279,7 +284,7 @@
                     step="0.01"
                     data-ng-model="scale_x"
                     data-ng-value="selectedChild.Scale()[0]"
-                    data-ng-change="selectedChild.SetScale([ scale_x, selectedChild.Scale()[1], selectedChild.Scale()[2] ])"
+                    data-ng-change="selectedChild.ScaleTo([ scale_x, selectedChild.Scale()[1], selectedChild.Scale()[2] ])"
                 />
                 Y
                 <input
@@ -287,7 +292,7 @@
                     step="0.01"
                     data-ng-model="scale_y"
                     data-ng-value="selectedChild.Scale()[1]"
-                    data-ng-change="selectedChild.SetScale([ selectedChild.Scale()[0], scale_y, selectedChild.Scale()[2] ])"
+                    data-ng-change="selectedChild.ScaleTo([ selectedChild.Scale()[0], scale_y, selectedChild.Scale()[2] ])"
                 />
                 Z
                 <input
@@ -295,7 +300,7 @@
                     step="0.01"
                     data-ng-model="scale_z"
                     data-ng-value="selectedChild.Scale()[2]"
-                    data-ng-change="selectedChild.SetScale([ selectedChild.Scale()[0], selectedChild.Scale()[1], scale_z ])"
+                    data-ng-change="selectedChild.ScaleTo([ selectedChild.Scale()[0], selectedChild.Scale()[1], scale_z ])"
                 />
                 </form>
             </td>
@@ -333,7 +338,7 @@
                     style="width:16px"
                     data-ng-model="auto_rotate"
                     data-ng-click="selectedChild.SetAutoRotate(auto_rotate)"
-                    data-ng-checked="selectedChild.AutoRotate()"
+                    data-ng-checked="selectedChild.AutoRotate"
                 />
                 </form>
             </td>
@@ -502,7 +507,7 @@
                     min="1.0"
                     data-ng-value="t.Scale()[0]"
                     data-ng-model="scale_u"
-                    data-ng-change="t.SetScale([ scale_u, t.Scale()[1] ])"
+                    data-ng-change="t.ScaleTo([ scale_u, t.Scale()[1] ])"
                 />
                 V
                 <input
@@ -512,7 +517,7 @@
                     min="1.0"
                     data-ng-value="t.Scale()[1]"
                     data-ng-model="scale_v"
-                    data-ng-change="t.SetScale([ t.Scale()[0], scale_v ])"
+                    data-ng-change="t.ScaleTo([ t.Scale()[0], scale_v ])"
                 />
                 </div>
             </td>
@@ -586,9 +591,9 @@
                     step="0.01"
                     min="0.01"
                     max="0.5"
-                    data-ng-value="selectedComponent.FBO().Speed()"
+                    data-ng-value="selectedComponent.FBO().Speed"
                     data-ng-model="speed"
-                    data-ng-change="selectedComponent.FBO().SetSpeed(speed)"
+                    data-ng-change="selectedComponent.FBO().Speed = speed"
                 />
                 0.5
             </td>
@@ -602,9 +607,9 @@
                     step="0.01"
                     min="0.01"
                     max="1.0"
-                    data-ng-value="selectedComponent.FBO().WaveStrength()"
+                    data-ng-value="selectedComponent.FBO().WaveStrength"
                     data-ng-model="wave_strength"
-                    data-ng-change="selectedComponent.FBO().SetWaveStrength(wave_strength)"
+                    data-ng-change="selectedComponent.FBO().WaveStrength = wave_strength"
                 />
                 1.0
             </td>
@@ -615,8 +620,7 @@
             </table>
         </div>
         </div>
-        <br />
-        <br />
+        <br /><br />
     </td>
     </tr>
     </table>
@@ -642,6 +646,7 @@
         </ins>
         <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
+    <!--
     <div class="leaderboard_728x90">
         <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
         <ins
@@ -652,8 +657,8 @@
         </ins>
         <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
-    <br />
-    <br />
+    -->
+    <br /><br />
 </body>
 
 </html>

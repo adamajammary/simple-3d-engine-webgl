@@ -3,7 +3,7 @@
 * Terrain
 * @class
 */
-class Terrain
+class Terrain extends Component
 {
     /**
     * @param {Array<string>} images
@@ -13,25 +13,17 @@ class Terrain
     */
     constructor(images, terrainSize, terrainOctaves, terrainRedistribution)
     {
-        //
-        // PRIVATE
-        //
-        var isValid  = false;
-        var mesh     = null;
-        var children = [];
-        var type     = ComponentType.TERRAIN;
+        super("Terrain");
 
-        //
-        // PRIVATE
-        //
-
+        let mesh = null;
+        
         /**
         * @param {number} size
         * @param {number} octaves
         * @param {number} redistribution
         * @param {object} parent
         */
-        function create(size, octaves, redistribution, parent)
+        this.init = function(size, octaves, redistribution, parent)
         {
             // https://www.dropbox.com/sh/do47b1opx7sxr2a/AAA9Wt05Lgqdm1z9g-YKyDWya/HeightsGenerator.java?dl=0
             // https://en.wikipedia.org/wiki/Perlin_noise
@@ -62,17 +54,17 @@ class Terrain
             terrainRedistribution = redistribution;
             terrainSize           = size;
 
-            var offset = (size / 2);
+            let offset = (size / 2);
 
-            var vertices      = [];
-            var normals       = [];
-            var textureCoords = [];
-            var indices       = [];
+            let vertices      = [];
+            let normals       = [];
+            let textureCoords = [];
+            let indices       = [];
 
-            var vertex = 0;
+            let vertex = 0;
 
-            for (var z = 0; z < size; z++) {
-            for (var x = 0; x < size; x++)
+            for (let z = 0; z < size; z++) {
+            for (let x = 0; x < size; x++)
             {
                 vertices[vertex * 3 + 0] = (x - offset);
                 vertices[vertex * 3 + 2] = (z - offset);
@@ -105,14 +97,14 @@ class Terrain
             // 0, 4, 1,
             // 1, 4, 5
             // 
-            var index = 0;
+            let index = 0;
 
             // FACES (TRIANGLE 1 + TRIANGLE 2)
-            for (var z = 0; z < size - 1; z++) {
-            for (var x = 0; x < size - 1; x++)
+            for (let z = 0; z < size - 1; z++) {
+            for (let x = 0; x < size - 1; x++)
             {
-                var topLeft    = (((z + 0) * size) + x);   // CURRENT ROW
-                var bottomLeft = (((z + 1) * size) + x);   // NEXT ROW
+                let topLeft    = (((z + 0) * size) + x);   // CURRENT ROW
+                let bottomLeft = (((z + 1) * size) + x);   // NEXT ROW
 
                 // TRIANGLE 1
                 indices[index++] = (topLeft    + 0);    // TOP-LEFT
@@ -133,73 +125,28 @@ class Terrain
             {
                 mesh.LoadArrays(vertices, textureCoords, normals, indices, "Mesh (Terrain)");
 
-                var files = [ "backgroundTexture.png", "rTexture.png", "gTexture.png", "bTexture.png", "blendMap.png" ];
+                let files = [ "backgroundTexture.png", "rTexture.png", "gTexture.png", "bTexture.png", "blendMap.png" ];
 
-                for (var i = 0; i < 5; i++)
+                for (let i = 0; i < 5; i++)
                 {
-                    var texture = new Texture(images[i], files[i], false, true);
+                    let texture = new Texture(images[i], files[i], false, true);
 
-                    texture.SetScale([ size, size ]);
+                    texture.ScaleTo([ size, size ]);
                     mesh.LoadTexture(texture, i);
                 }
 
-                for (var i = 5; i < Utils.MAX_TEXTURES; i++)
+                for (let i = 5; i < Utils.MAX_TEXTURES; i++)
                     mesh.LoadTexture(Utils.EmptyTexture, i);
 
-                children = [ mesh ];
+                this.Children = [ mesh ];
             }
 
-            isValid = (children.length > 0);
-        }
-
-        //
-        // PUBLIC
-        //
-
-        /**
-        * @return {number}
-        */
-        this.Child = function(index)
-        {
-            return children[index];
-        }
-        
-        /**
-        * @return {Array<object>}
-        */
-        this.Children = function()
-        {
-            return children;
-        }
-
-        /**
-        * @return {boolean}
-        */
-        this.IsValid = function()
-        {
-            return isValid;
-        }
-
-        /**
-        * @return {string}
-        */
-        this.Name = function()
-        {
-            return "Terrain";
+            this.isValid = (this.Children.length > 0);
         }
 
         this.Octaves = function()
         {
             return terrainOctaves;
-        }
-
-        /**
-        * @member
-        * @return {object}
-        */
-        this.Parent = function()
-        {
-            return null;
         }
 
         /**
@@ -209,7 +156,7 @@ class Terrain
         */
         this.Resize = function(size, octaves, redistribution)
         {
-            create(size, octaves, redistribution, this);
+            this.init(size, octaves, redistribution, this);
         }
 
         this.Redistribution = function()
@@ -217,38 +164,16 @@ class Terrain
             return terrainRedistribution;
         }
         
-        /**
-        * @param {object} child
-        */
-        this.RemoveChild = function(child)
-        {
-            var index = children.indexOf(child);
-            if (index < 0) { return -1; }
-
-            delete children[index];
-            children[index] = null;
-            children.splice(index, 1);
-            
-            return 0;
-        }
-
         this.Size = function()
         {
             return terrainSize;
         }
 
         /**
-        * @return {number}
-        */
-        this.Type = function()
-        {
-            return type;
-        }
-        
-        //
-        // MAIN
-        //
+         * MAIN
+         */
+        this.type = ComponentType.TERRAIN;
 
-        create(terrainSize, terrainOctaves, terrainRedistribution, this);
+        this.init(terrainSize, terrainOctaves, terrainRedistribution, this);
     }
 }

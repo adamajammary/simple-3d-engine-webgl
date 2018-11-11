@@ -10,19 +10,11 @@ class FrameBuffer
     */
     constructor(width, height)
     {
-        //
-        // PRIVATE
-        //
-
-        var colorTexture = null;
-        var depthTexture = null;
-        var gl           = RenderEngine.GLContext();
-        var id           = null;
-        var renderBuffer = null;
-
-        //
-        // PUBLIC
-        //
+        let colorTexture = null;
+        let depthTexture = null;
+        let gl           = RenderEngine.GLContext();
+        let id           = null;
+        let renderBuffer = null;
 
         /**
         * @param  {number} format
@@ -43,9 +35,6 @@ class FrameBuffer
             this.Unbind();
         }
 
-        /**
-         * 
-         */
         this.Bind = function()
         {
             gl.bindTexture(gl.TEXTURE_2D, null);
@@ -53,17 +42,11 @@ class FrameBuffer
             gl.viewport(0, 0, width, height);
         }
 
-        /**
-         * 
-         */
         this.ColorTexture = function()
         {
             return colorTexture;
         }
 
-        /**
-         * 
-         */
         this.CreateColorTexture = function()
         {
             this.Bind();
@@ -71,9 +54,6 @@ class FrameBuffer
             this.Unbind();
         }
 
-        /**
-         * 
-         */
         this.CreateDepthTexture = function()
         {
             this.Bind();
@@ -81,9 +61,6 @@ class FrameBuffer
             this.Unbind();
         }
 
-        /**
-         * 
-         */
         this.DepthTexture = function()
         {
             return depthTexture;
@@ -105,9 +82,6 @@ class FrameBuffer
             return id;
         }
        
-        /**
-         * 
-         */
         this.Unbind = function()
         {
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -121,20 +95,19 @@ class FrameBuffer
         {
             return width;
         }
-        
-        //
-        // MAIN
-        //
 
+        /**
+         * MAIN
+         */
         id = gl.createFramebuffer();
-        
-        if (id)
-        {
+            
+        if (id) {
             this.Bind();
             gl.drawBuffers([ gl.COLOR_ATTACHMENT0 ]);
             this.Unbind();
         } else {
             alert("ERROR: Failed to create the frame buffer.");
         }
+
     }
 }

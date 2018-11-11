@@ -29,22 +29,23 @@ class Utils
 
     /**
     * 
-    * @param {string} modelText
-    * @param {object} parent
+    * @param {string}    modelText
+    * @param {Component} parent
     */
     static LoadModel(modelText, parent)
     {
-        var json   = Utils.LoadJSON(modelText);
-        var meshes = [];
+        let json   = Utils.LoadJSON(modelText);
+        let meshes = [];
 
         if (!json || (json.meshes.length == 0)) {
             alert("ERROR: Failed to parse the JSON.");
             return meshes;
         }
 
-        for (var i = 0; i < json.meshes.length; i++)
+        for (let i = 0; i < json.meshes.length; i++)
         {
-            var mesh = new Mesh(parent);
+            let name = ((json.meshes[i].name != "") ? json.meshes[i].name : json.rootnode.children[i].name);
+            let mesh = new Mesh(parent, ((name != "") ? name : "Mesh"));
 
             if (!mesh)
                 continue;

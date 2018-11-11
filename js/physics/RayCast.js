@@ -10,13 +10,18 @@ class RayCast
     */
     constructor(x, y)
     {
-        //
-        // PRIVATE
-        //
+        let direction        = [];
+        let inverseDirection = vec3.create();
+        let origin           = [];
+        
+        init();
 
-        var direction        = [];
-        var inverseDirection = vec3.create();
-        var origin           = [];
+        function init()
+        {
+            direction        = calculateRay(x, y);
+            inverseDirection = vec3.fromValues((1.0 / direction[0]), (1.0 / direction[1]), (1.0 / direction[2]));
+            origin           = RenderEngine.Camera.Position();
+        }
 
         /**
         * http://antongerdelan.net/opengl/raycasting.html
@@ -62,10 +67,6 @@ class RayCast
 
             return ray;
         }
-
-        //
-        // PUBLIC
-        //
 
         /**
          * @param {Array<number>} boxMin 
@@ -115,13 +116,5 @@ class RayCast
         {
             console.log("RayIntersectSphere: NOT IMPLEMENTED YET");
         }
-
-        //
-        // MAIN
-        //
-
-        direction        = calculateRay(x, y);
-        inverseDirection = vec3.fromValues((1.0 / direction[0]), (1.0 / direction[1]), (1.0 / direction[2]));
-        origin           = RenderEngine.Camera.Position();
     }
 }

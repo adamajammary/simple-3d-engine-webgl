@@ -1,13 +1,16 @@
-attribute vec3 vertexNormal;
-attribute vec3 vertexPosition;
-attribute vec2 vertexTextureCoords;
+attribute vec3 VertexNormal;
+attribute vec3 VertexPosition;
+attribute vec2 VertexTextureCoords;
 
-uniform mat4 matrixModel;
-uniform mat4 matrixView;
-uniform mat4 matrixProjection;
+uniform mat4 MatrixModel;
+uniform mat4 MatrixView;
+uniform mat4 MatrixProjection;
+uniform mat4 MatrixMVP;
 
 void main()
 {
-    vec4 worldPosition = (matrixModel * vec4(vertexPosition, 1.0));
-    gl_Position = (matrixProjection * matrixView * worldPosition);
+    /*vec4 worldPosition = (MatrixModel * vec4(VertexPosition, 1.0));
+    gl_Position = (MatrixProjection * MatrixView * worldPosition);*/
+
+    gl_Position = (MatrixMVP * vec4(VertexPosition, 1.0));    
 }

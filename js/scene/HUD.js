@@ -2,88 +2,21 @@
 * 2D Orthographic HUD
 * @class
 */
-class HUD
+class HUD extends Component
 {
     /**
     * @param {string} quad
     */
     constructor(quad)
     {
-        //
-        // PRIVATE
-        //
+        super("HUD");
 
-        var isValid     = false;
-        var children      = [];
-        var text        = "";
-        var textAlign   = "Middle-Center";
-        var textColor   = "#000000";
-        var textFont    = "Arial";
-        var textSize    = 20;
-        var transparent = false;
-        var type        = ComponentType.HUD;
-
-        //
-        // PUBLIC
-        //
-
-        /**
-        * @return {number}
-        */
-        this.Child = function(index)
-        {
-            return children[index];
-        }
-        
-        /**
-        * @return {Array<object>}
-        */
-        this.Children = function()
-        {
-            return children;
-        }
-
-        /**
-        * @return {boolean}
-        */
-        this.IsValid = function()
-        {
-            return isValid;
-        }
-
-        /**
-        * @return {string}
-        */
-        this.Name = function()
-        {
-            return "HUD";
-        }
-
-        /**
-        * @return {object}
-        */
-        this.Parent = function()
-        {
-            return null;
-        }
-        
-        /**
-        * @param {object} child
-        */
-        this.RemoveChild = function(child)
-        {
-            var index = children.indexOf(child);
-
-            if (index < 0)
-                return -1;
-
-            delete children[index];
-            children[index] = null;
-
-            children.splice(index, 1);
-            
-            return 0;
-        }
+        let text        = "";
+        let textAlign   = "Middle-Center";
+        let textColor   = "#000000";
+        let textFont    = "Arial";
+        let textSize    = 20;
+        let transparent = false;
 
         /**
         * @param {string} align
@@ -179,14 +112,6 @@ class HUD
         }
 
         /**
-        * @return {number}
-        */
-        this.Type = function()
-        {
-            return type;
-        }
-
-        /**
         * @param {string} newText
         */
         this.Update = function(newText)
@@ -196,11 +121,11 @@ class HUD
             var canvas = null;
             var gl2D   = null;
 
-            if (children[0])
+            if (this.Children[0])
             {
                 canvas        = document.createElement("canvas");
-                canvas.width  = (RenderEngine.Canvas().width  * children[0].Scale()[0]);
-                canvas.height = (RenderEngine.Canvas().height * children[0].Scale()[1]);
+                canvas.width  = (RenderEngine.Canvas().width  * this.Children[0].Scale()[0]);
+                canvas.height = (RenderEngine.Canvas().height * this.Children[0].Scale()[1]);
             }
 
             if (canvas)
@@ -211,12 +136,12 @@ class HUD
                 if (transparent) {
                     gl2D.clearRect(0, 0, gl2D.canvas.width, gl2D.canvas.height);
                 } else {
-                    gl2D.fillStyle = ("#" + Utils.ToColorHex(children[0].Color()));
+                    gl2D.fillStyle = ("#" + Utils.ToColorHex(this.Children[0].Color()));
                     gl2D.fillRect(0, 0, gl2D.canvas.width, gl2D.canvas.height);
                 }
 
-                if (children[0].IsTextured())
-                    gl2D.drawImage(children[0].Texture(0).Image(), 0, 0, gl2D.canvas.width, gl2D.canvas.height);
+                if (this.Children[0].IsTextured())
+                    gl2D.drawImage(this.Children[0].Textures[0].Image(), 0, 0, gl2D.canvas.width, gl2D.canvas.height);
 
                 gl2D.fillStyle = textColor;
                 gl2D.font      = ("bold " + textSize + "px " + textFont);
@@ -244,22 +169,22 @@ class HUD
                 gl2D.fillText(text, horizontalPosition, verticalPosition);
 
                 var texture = new Texture(gl2D.canvas, "", false, false, true);
-                children[0].LoadTexture(texture, 5);
+                this.Children[0].LoadTexture(texture, 5);
             }
         }
 
-        //
-        // MAIN
-        //
+        /**
+         * MAIN
+         */
+        this.type     = ComponentType.HUD;
+        this.Children = Utils.LoadModel(quad, this);
+        this.isValid  = (this.Children.length > 0);
 
-        children = Utils.LoadModel(quad, this);
-        isValid  = (children.length > 0);
-
-        if (isValid && children[0])
+        if (this.isValid && this.Children[0])
         {
-            children[0].SetName("Mesh (HUD)");
-            children[0].SetPosition([ 0.72, 0.7, 0.0 ]);
-            children[0].SetScale([ 0.25, 0.25, 0.0 ]);
+            this.Children[0].Name = "Mesh (HUD)";
+            this.Children[0].MoveTo([ 0.72, 0.7, 0.0 ]);
+            this.Children[0].ScaleTo([ 0.25, 0.25, 0.0 ]);
 
             this.Update("HUD");
         }
