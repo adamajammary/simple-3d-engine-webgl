@@ -144,7 +144,7 @@ class Camera extends Component
 
                 // UP / DOWN (Y)
                 if (event.shiftKey) {
-                    moveVector = vec3.fromValues([ 0.0, moveModifier, 0.0 ]);
+                    moveVector = vec3.fromValues(0.0, moveModifier, 0.0);
                 }
                 // LEFT / RIGHT (X)
                 else if (event.ctrlKey)
