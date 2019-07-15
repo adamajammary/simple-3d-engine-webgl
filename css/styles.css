@@ -1,18 +1,20 @@
 * {
-	color:     white;
-	font-family: Arial, Helvetica, sans-serif;
-	font-size:   10pt;
-	font-weight: normal;
+	color:         white;
+	font-family:    Arial, Helvetica, sans-serif;
+	font-size:      small;
+	vertical-align: top;
 }
 
 a {
-	font-weight:     bold;
 	text-decoration: none;
 }
 
 a:hover {
-	cursor:          pointer;
 	text-decoration: underline;
+}
+
+b {
+	font-weight: bold;
 }
 
 body {
@@ -24,40 +26,23 @@ body {
 
 button {
 	background-color: #202020;
+	cursor:           pointer;
 }
 
-h1 {
-	font-size:   24pt;
-	font-weight: bold;
+footer {
+	padding:    10px;
+	text-align: center;
+	width:      100%;
 }
 
-h2 {
-	font-size:   20pt;
-	font-weight: bold;
+footer img {
+	margin-left:    10px;
+	margin-right:   5px;
+	vertical-align: middle;
 }
 
-h3 {
-	font-size:   16pt;
-	font-weight: bold;
-}
-
-h4 {
-	font-size:   14pt;
-	font-weight: bold;
-}
-
-h5 {
-	font-size:   12pt;
-	font-weight: bold;
-}
-
-h6 {
-	font-size:   10pt;
-	font-weight: bold;
-}
-
-hr {
-	margin: 10px 0px 15px 0px;
+footer a {
+	vertical-align: middle;
 }
 
 html {
@@ -67,19 +52,6 @@ html {
 
 img {
 	border: none;
-}
-
-input[type="button"] {
-	background-color: #202020;
-}
-
-input[type="checkbox"] {
-	vertical-align: middle;
-}
-
-input[type="file"] {
-	color: transparent;
-	width: 70px;
 }
 
 input[type="number"], input[type="text"] {
@@ -96,31 +68,6 @@ select, option {
 
 table {
 	border-collapse: collapse;
-	margin-left:     auto;
-	margin-right:    auto;
-	padding:         0px;
-	text-align:      center;
-}
-
-tr {
-	margin:  0px;
-	padding: 0px;
-}
-
-th {
-	margin:         0px;
-	padding:        0px;
-	font-weight:    bold;
-	vertical-align: middle;
-	text-align:     left;
-}
-
-td {
-	border:         0px solid yellow;
-	margin:         0px;
-	padding:        0px;
-	vertical-align: middle;
-	text-align:     center;
 }
 
 /* CLASSES */
@@ -147,23 +94,61 @@ td {
 	width:            728px;
 	height:           90px;
 	overflow:         hidden;
-	text-align:       left;
 	display:          inline-block;
 }
 
-/* ID's */
-
-#load_scene {
-	display: none;
+.tabs {
+	border-bottom:    1px solid white;
+	background-color: #EEEEEE;
+	overflow:         hidden;
+	border-radius:    5px 5px 0px 0px;
 }
 
-#load_scene_label {
-	font-weight: bold;
+.tabs button {
+	background-color: inherit;
+	border:           none;
+	color:            black;
+	float:            left;
+	padding:          10px;
 }
 
-#load_scene_label:hover {
-	cursor:          pointer;
-	text-decoration: underline;
+.tabs button:hover, .tab button:hover {
+	background-color: #606060;
+	color:            white;
+}
+
+.tabs button.active {
+	background-color: #404040;
+	color:            white;
+}
+
+.tab {
+	border-bottom: 1px solid white;
+	display:       none;
+	overflow:      hidden;
+}
+
+.tab button, .tab input {
+	border:  none;
+	color:   white;
+	float:   left;
+	padding: 10px;
+}
+
+.tab.active {
+	display: block;
+}
+
+/* IDs */
+
+#components {
+	border: 1px solid white;
+	margin:  5px 0px 5px 0px;
+	padding: 5px;
+}
+
+#components select {
+	margin: 1px;
 }
 
 #component_details {
@@ -171,18 +156,62 @@ td {
 	border:           1px solid white;
 	border-spacing:   0px;
 	border-radius:    5px;
-	padding:          5px;
 	overflow:         auto;
-	height:           440px;
+	padding:          10px;
+	width:            415px;
+	height:           415px;
 }
 
-#component_details td {
-	padding:    2px;
-	text-align: left;
+#component_details div {
+	margin-bottom: 10px;
 }
 
-#component_details th {
-	width: 120px;
+#component_details hr {
+	margin: 0px;
+}
+
+#component_details label {
+	vertical-align: middle;
+}
+
+#component_details p {
+	margin: 0px;
+}
+
+#component_details_remove {
+	text-align: center;
+}
+
+#interactions th {
+	font-size:  small;
+	text-align: right;
+}
+
+#interactions td {
+	font-size:    small;
+	padding-left: 10px;
+}
+
+#left_menu {
+	padding-left: 10px;
+	text-align:   left;
+}
+
+#load_model {
+	border: 2px outset lightgray;
+	margin: 5px;
+}
+
+#load_model input {
+	display: none;
+}
+
+#load_model label {
+	padding: 10px;
+}
+
+#load_model label:hover {
+	cursor: pointer;
 }
 
 #main {
@@ -190,65 +219,70 @@ td {
 	border:           1px solid white;
 	border-spacing:   0px;
 	border-radius:    5px;
-	width:            1200px;
 	margin-left:      auto;
 	margin-right:     auto;
-}
-
-#left_menu {
-	width:          100px;
-	text-align:     center;
-	vertical-align: top;
-	overflow-x:     hidden;
-	overflow-y:     hidden;
+	width:            1100px;
 }
 
 #right_menu {
-	width:          500px;
-	vertical-align: top;
-	text-align:     left;
-	padding:        10px 0px 10px 10px;
-}
-
-#webgl_td_canvas {
-	vertical-align: top;
-	padding-top:    10px;
-}
-
-#interactions th {
-	padding-right: 20px;
-}
-
-#interactions td {
+	padding:    0px 0px 10px 5px;
 	text-align: left;
 }
 
-#render_settings table {
-	margin-left: 0px;
+#right_menu button {
+	padding: 5px 10px 5px 10px;
 }
 
-#render_settings td {
-	padding: 0px 30px 0px 10px;
+#right_menu button:hover {
+	background-color: #606060;
 }
 
-#w3_validator_html a, a:hover {
-	text-decoration: none;
+#render_settings {
+	padding:    10px;
+	text-align: left;
 }
 
-#w3_validator_html img {
-	vertical-align: middle;
-	border:         0px;
-	width:          63px;
-	height:         64px;
+#render_settings input[type="checkbox"] {
+	margin: 2px 15px 0px 5px;
 }
 
-#w3_validator_css a:hover {
-	text-decoration: none;
+#render_settings select {
+	margin: 0px 15px 0px 5px;
 }
 
-#w3_validator_css img {
-	vertical-align: middle;
-	border:         0px;
-	width:          88px;
-	height:         31px;
+#scene_label {
+	float:   left;
+	padding: 6px 10px 0px 0px;
+}
+
+#scene_load input {
+	display: none;
+}
+
+#scene_load label {
+	padding: 5px 0px 5px 0px;
+}
+
+#scene_load label:hover {
+	cursor: pointer;
+}
+
+#scene_save a {
+	padding: 5px 0px 5px 0px;
+}
+
+#texture_load input {
+	display: none;
+}
+
+#texture_load label {
+	padding: 5px 0px 5px 0px;
+}
+
+#texture_load label:hover {
+	cursor: pointer;
+}
+
+#title {
+	font-size: medium;
 }

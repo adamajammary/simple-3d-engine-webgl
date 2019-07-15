@@ -224,6 +224,11 @@ class Mesh extends Component
                 }
             }
 
+            if (this.type === ComponentType.WATER) {
+                this.scale.z = 10.0;
+                this.ComponentMaterial.specular.shininess = 20.0;
+            }
+
         	this.updateModelData();
             setMaxScale();
             this.SetBoundingVolume("box");
@@ -234,18 +239,17 @@ class Mesh extends Component
         }
 
         /**
-        * @param {object} image
-        * @param {string} file
+        * @param {object} image { file:string, name:string, result:HTMLImageElement }
         * @param {number} index
         */
-        this.LoadTextureImage = function(image, file, index)
+        this.LoadTextureImage = function(image, index)
         {
             if (!this.TBO()) {
                 alert("ERROR: The model is missing texture coordinates.");
                 return -1;
             }
 
-            this.Textures[index] = new Texture(image, file);
+            this.Textures[index] = new Texture([ image ]);
 
             if ((index == 0) && (this.Parent.Type() === ComponentType.HUD))
                 this.Parent.Update(this.Parent.Text());
@@ -423,7 +427,7 @@ class Mesh extends Component
             this.ScaleTo(this.scale);
             this.RotateTo(this.rotation);
         
-            for (let i = 0; i < Utils.MAX_TEXTURES; i++) {
+            for (let i = 0; i < MAX_TEXTURES; i++) {
                 if (!this.Textures[i])
                     this.LoadTexture(Utils.EmptyTexture, i);
             }

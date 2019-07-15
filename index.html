@@ -5,9 +5,9 @@
     <title>{{ appName }} v.{{ appVersion }}</title>
     <meta charset="UTF-8">
     <link type="text/css" href="css/styles.css" rel="stylesheet" />
-    
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.5/angular.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.4.0/gl-matrix-min.js"></script>
+   
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.7.8/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
     <script src="js/globals.js"></script>
@@ -17,13 +17,16 @@
     <script src="js/render/RenderEngine.js"></script>
     <script src="js/render/ShaderManager.js"></script>
     <script src="js/render/ShaderProgram.js"></script>
-    <script src="js/scene/Buffer.js"></script>
-    <script src="js/scene/FrameBuffer.js"></script>
     <script src="js/scene/Component.js"></script>
-    <script src="js/scene/Mesh.js"></script>
+    <script src="js/scene/Buffer.js"></script>
     <script src="js/scene/Camera.js"></script>
+    <script src="js/scene/FrameBuffer.js"></script>
     <script src="js/scene/HUD.js"></script>
+    <script src="js/scene/Material.js"></script>
+    <script src="js/scene/Mesh.js"></script>
     <script src="js/scene/Model.js"></script>
+    <script src="js/scene/Light.js"></script>
+    <script src="js/scene/LightSource.js"></script>
     <script src="js/scene/Skybox.js"></script>
     <script src="js/scene/Terrain.js"></script>
     <script src="js/scene/Texture.js"></script>
@@ -32,13 +35,6 @@
     <script src="js/system/Utils.js"></script>
     <script src="js/time/TimeManager.js"></script>
     <script src="js/main.js"></script>
-    <!--<script src="js/ai/AIEngine.js"></script>-->
-    <!--<script src="js/audio/AudioEngine.js"></script>-->
-    <!--<script src="js/font/FontEngine.js"></script>-->
-    <!--<script src="js/network/NetworkEngine.js"></script>-->
-    <!--<script src="js/scene/Light.js"></script>-->
-    <!--<script src="js/scene/Scene.js"></script>-->
-    <!--<script src="js/scene/SceneManager.js"></script>-->
 </head>
 
 <body>
@@ -52,613 +48,735 @@
         </ins>
         <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
-    <!--
-    <div class="leaderboard_728x90">
-        <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        <ins
-            class="adsbygoogle"
-            style="display:inline-block; width:728px; height:90px"
-            data-ad-client="ca-pub-4533895183221047"
-            data-ad-slot="2414665538">
-        </ins>
-        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </div>
-    -->
-    <p>{{ appName }} v.{{ appVersion }} - {{ GPU }} - {{ FPS }} FPS</p>
+
+    <p id="title">{{ appName }} v.{{ appVersion }} - {{ GPU }} - {{ FPS }} FPS</p>
+
     <div id="main">
-    <table>
-    <tr>
-    <td colspan="2" style="padding-top:10px">
-        <table style="width:100%">
-        <tr>
-        <td style="text-align:left">
+    <div class="tabs">
+        <button class="tab_btn active" onclick="angular.element(this).scope().onClickTab(event, 'Geometry')">Geometry</button>
+        <button class="tab_btn" onclick="angular.element(this).scope().onClickTab(event, 'Environment')">Environment</button>
+        <button class="tab_btn" onclick="angular.element(this).scope().onClickTab(event, 'Lights')">Lights</button>
+        <button class="tab_btn" onclick="angular.element(this).scope().onClickTab(event, 'UI')">UI</button>
+    </div>
+    <div id="Geometry" class="tab active">
+        <button id="load_model">
+            <label for="load_model_input">Load</label>
             <input
                 type="file"
                 accept=".json"
+                id="load_model_input"
                 onchange="angular.element(this).scope().loadModelFile(this.files)"
             />
-        </td>
-        <td data-ng-repeat="s in icons">
-            <a data-ng-click="iconClick(s.name)">
-                <img class="icon" data-ng-src="{{ s.file }}" src="#" title="" alt="" />
-                {{ s.title }}
-            </a>
-        </td>
-        </tr>
-        </table>
-        <hr style="margin-top:10px" />
+        </button>
+        <button data-ng-repeat="s in icons_geometry" data-ng-click="onClickIcon(s.name)">
+            <img class="icon" data-ng-src="{{ s.file }}" src="#" title="" alt="" />
+            {{ s.title }}
+        </button>
+    </div>
+    <div id="Environment" class="tab">
+        <button data-ng-repeat="s in icons_environment" data-ng-click="onClickIcon(s.name)">
+            <img class="icon" data-ng-src="{{ s.file }}" src="#" title="" alt="" />
+            {{ s.title }}
+        </button>
+    </div>
+    <div id="Lights" class="tab">
+        <button data-ng-repeat="s in icons_lights" data-ng-click="onClickIcon(s.name)">
+            <img class="icon" data-ng-src="{{ s.file }}" src="#" title="" alt="" />
+            {{ s.title }}
+        </button>
+    </div>            
+    <div id="UI" class="tab">
+        <button data-ng-repeat="s in icons_ui" data-ng-click="onClickIcon(s.name)">
+            <img class="icon" data-ng-src="{{ s.file }}" src="#" title="" alt="" />
+            {{ s.title }}
+        </button>
+    </div>
+    <table>
+    <tr>
+    <td id="render_settings" colspan="2">
+        <label>Aspect Ratio</label>
+        <select
+            data-ng-options="r.value as r.name for r in aspectRatios"
+            data-ng-model="render_settings_aspect_ratio"
+            data-ng-init="aspectRatios[0].value"
+            onchange="RenderEngine.SetAspectRatio(this.value)">
+            <option style="display:none" value="">Aspect Ratio</option>
+        </select>
+        <label>FOV</label>
+        <select
+            data-ng-options="f.value as f.name for f in fovs"
+            data-ng-model="render_settings_fov"
+            data-ng-init="fovs[0].value"
+            onchange="RenderEngine.Camera.SetFOV(this.value)">
+            <option style="display:none" value="">FOV</option>
+        </select>
+        <label>Draw Mode</label>
+        <select
+            data-ng-options="m for m in drawModes"
+            data-ng-model="render_settings_draw_mode"
+            data-ng-init="drawModes[0]"
+            onchange="RenderEngine.SetDrawMode(this.value)">
+            <option style="display:none" value="">Draw Mode</option>
+        </select>
+        <label>Draw Bounding Volumes</label>
+        <input type="checkbox" onclick="RenderEngine.DrawBoundingVolume=this.checked" />
+        <label>sRGB Gamma Correction</label>
+        <input type="checkbox" onclick="RenderEngine.EnableSRGB=this.checked" checked />
     </td>
     </tr>
     <tr>
-    <td colspan="2">
-        <table id="render_settings">
-        <tr>
-        <th>Aspect Ratio:</th>
-        <td>
-            <select
-                data-ng-options="r.value as r.name for r in aspectRatios"
-                data-ng-model="aspectRatio"
-                data-ng-init="aspectRatio=aspectRatios[0].value"
-                onchange="RenderEngine.SetAspectRatio(this.value)">
-                <option style="display:none" value="">Aspect Ratio</option>
-            </select>
-        </td>
-        <th>FOV:</th>
-        <td>
-            <select
-                data-ng-options="f.value as f.name for f in fovs"
-                data-ng-model="FOV"
-                data-ng-init="FOV=fovs[0].value"
-                onchange="RenderEngine.Camera.SetFOV(this.value)">
-                <option style="display:none" value="">FOV</option>
-            </select>
-        </td>
-        <th>Draw Mode:</th>
-        <td>
-            <select
-                data-ng-options="m for m in drawModes"
-                data-ng-model="drawMode"
-                data-ng-init="drawMode=drawModes[0]"
-                onchange="RenderEngine.SetDrawMode(this.value)">
-                <option style="display:none" value="">Draw Mode</option>
-            </select>
-        </td>
-        <th>Draw Bounding Volumes:</th>
-        <td>
-            <input type="checkbox" onclick="RenderEngine.DrawBoundingVolume=this.checked" />
-        </td>
-        </tr>
-        </table>
-        <hr style="margin:10px 0px 0px 0px" />
-    </td>
-    </tr>
-    <tr>
-    <td id="webgl_td_canvas">
+    <td id="left_menu">
         <canvas id="webgl_canvas" width="640" height="360" oncontextmenu="return false">
             Your browser does not support HTML5!
         </canvas>
-        <br />
-        <hr />
         <p>{{ state }}</p>
         <hr />
-        <h5>Interactions</h5>
         <table id="interactions">
             <tr data-ng-repeat="i in interactions">
                 <th>{{ i.header }}</th>
                 <td>{{ i.data   }}</td>
             </tr>
         </table>
-        <br />
     </td>
     <td id="right_menu">
-        <b>Scene</b>
-        [ 
-        <a data-ng-href="{{ sceneURL }}" data-ng-mouseup="saveScene()" download="scene.scene">SAVE</a>
-        | 
-        <label for="load_scene" id="load_scene_label">LOAD</label>
-        <input
-            type="file"
-            accept=".scene"
-            id="load_scene"
-            onchange="angular.element(this).scope().loadSceneFile(this)"
-        />
-        | 
-        <a data-ng-click="clearScene()">CLEAR</a>
-        ]
-        <hr />
-        <select
-            id="selected_component"
-            style="width:49%"
-            size="5"
-            data-ng-options="c.Name for c in components"
-            data-ng-model="component"
-            data-ng-change="selectComponent(component); child = component.Children[0]; selectChild(child);"
-            >
-            <option style="display:none" value="">Components</option>
-        </select>
-        <select
-            id="selected_child"
-            style="width:49%"
-            size="5"
-            data-ng-options="c2.Name for c2 in component.Children"
-            data-ng-model="child"
-            data-ng-change="selectChild(child)">
-            <option style="display:none" value="">Children</option>
-        </select>
-        <br />
-        <br />
-        <div id="component_details">
-        <div data-ng-show="showTest1()">
-            <p style="text-align:center" data-ng-show="showTest2()">
-                <button data-ng-click="removeSelectedComponent()">REMOVE {{ selectedComponent.Name }}</button>
-                <button data-ng-click="removeSelectedChild()">REMOVE {{ selectedChild.Name }}</button>
-            </p>
-            <br data-ng-show="!showTest2()" />
-            <table>
-            <tr data-ng-show="showTest1()">
-            <th>Name</th>
-            <td>
+        <div id="scene">
+            <label id="scene_label">Scene</label>
+            <button id="scene_save">
+                <a data-ng-href="{{ sceneURL }}" data-ng-click="saveScene()" download="s3de_webgl_scene1.scene">Save</a>
+            </button>
+            <button id="scene_load">
+                <label for="scene_load_input">Load</label>
+                <input
+                    type="file"
+                    accept=".scene"
+                    id="scene_load_input"
+                    onchange="angular.element(this).scope().loadSceneFile(this)"
+                />
+            </button>
+            <button data-ng-click="onClickClearScene()">Clear</button>
+        </div>
+        <div id="components">
+            <select
+                id="selected_component"
+                style="width:49%"
+                size="5"
+                data-ng-options="c.Name for c in components"
+                data-ng-model="components_component"
+                data-ng-change="selectComponent(components_component); components_child = selectedChild;">
+                <option style="display:none" value="">Components</option>
+            </select>
+            <select
+                id="selected_child"
+                style="width:49%"
+                size="5"
+                data-ng-options="c2.Name for c2 in components_component.Children"
+                data-ng-model="components_child"
+                data-ng-change="selectChild(components_child)">
+                <option style="display:none" value="">Children</option>
+            </select>
+        </div>
+        <div id="component_details" data-ng-show="showTestSelected()">
+            <div id="component_details_remove" data-ng-show="showTestCamera()">
+                <button onclick="RenderEngine.Camera.Reset()">Reset Camera</button>
+            </div>
+            <div id="component_details_remove" data-ng-show="!showTestCamera()">
+                <button data-ng-click="removeSelectedComponent()">Remove {{ selectedComponent.Name }}</button>
+                <button data-ng-click="removeSelectedChild()">Remove {{ selectedChild.Name }}</button>
+            </div>
+            <div data-ng-show="showTestSelected()">
+                <p>Name</p>
                 <input
                     type="text"
                     size="38"
-                    data-ng-readonly="showTest10()"
+                    data-ng-readonly="showTestCamera()"
+                    data-ng-model="mesh_name"
                     data-ng-value="selectedChild.Name"
-                    data-ng-model="name"
-                    data-ng-change="selectedChild.SetName(name); name = selectedChild.Name;"
+                    data-ng-change="selectedChild.SetName(mesh_name)"
                 />
-            </td>
-            </tr>
-            <tr data-ng-show="showTest1()"><td colspan='2'>&nbsp;</td></tr>
-
-            <tr data-ng-show="showTest3()">
-            <th>Location</th>
-            <td>
-                <form class='form_input_number_3'>
-                X
+            </div>
+            <div data-ng-show="showTestLightSource()">
+                <label>Active</label>
+                <input
+                    type="checkbox"
+                    style="width:16px"
+                    data-ng-model="light_active"
+                    data-ng-checked="light_active = selectedComponent.Active()"
+                    data-ng-change="selectedComponent.SetActive(light_active)"
+                />
+            </div>
+            <div data-ng-show="!showTestSkybox()">
+                <p>Location</p>
+                <form class="form_input_number_3">
+                <label>X</label>
                 <input
                     type="number"
                     step="0.01"
-                    data-ng-model="location_x"
+                    data-ng-model="mesh_location_x"
                     data-ng-value="selectedChild.Position()[0]"
-                    data-ng-change="selectedChild.MoveTo([ location_x, selectedChild.Position()[1], selectedChild.Position()[2] ])"
+                    data-ng-change="selectedChild.MoveTo([ mesh_location_x, selectedChild.Position()[1], selectedChild.Position()[2] ])"
                 />
-                Y
+                <label>Y</label>
                 <input
                     type="number"
                     step="0.01"
-                    data-ng-model="location_y"
+                    data-ng-model="mesh_location_y"
                     data-ng-value="selectedChild.Position()[1]"
-                    data-ng-change="selectedChild.MoveTo([ selectedChild.Position()[0], location_y, selectedChild.Position()[2] ])"
+                    data-ng-change="selectedChild.MoveTo([ selectedChild.Position()[0], mesh_location_y, selectedChild.Position()[2] ])"
                 />
-                Z
+                <label>Z</label>
                 <input
                     type="number"
                     step="0.01"
-                    data-ng-model="location_z"
+                    data-ng-model="mesh_location_z"
                     data-ng-value="selectedChild.Position()[2]"
-                    data-ng-change="selectedChild.MoveTo([ selectedChild.Position()[0], selectedChild.Position()[1], location_z ])"
+                    data-ng-change="selectedChild.MoveTo([ selectedChild.Position()[0], selectedChild.Position()[1], mesh_location_z ])"
                 />
                 </form>
-            </td>
-            </tr>
-            
-            <tr data-ng-show="showTest3()">
-            <th>Rotation (rad)</th>
-            <td>
-                <form class='form_input_number_3'>
-                X
+            </div>
+            <div data-ng-show="!showTestLightSource() && !showTestSkybox()">
+                <p>Rotation (rad)</p>
+                <form class="form_input_number_3">
+                <label>X</label>
                 <input
                     type="number"
                     step="0.01"
-                    data-ng-model="rotation_x"
+                    data-ng-model="mesh_rotation_x"
                     data-ng-value="selectedChild.Rotation()[0]"
-                    data-ng-change="selectedChild.RotateTo([ rotation_x, selectedChild.Rotation()[1], selectedChild.Rotation()[2] ])"
+                    data-ng-change="selectedChild.RotateTo([ mesh_rotation_x, selectedChild.Rotation()[1], selectedChild.Rotation()[2] ])"
                 />
-                Y
+                <label>Y</label>
                 <input
                     type="number"
                     step="0.01"
-                    data-ng-model="rotation_y"
+                    data-ng-model="mesh_rotation_y"
                     data-ng-value="selectedChild.Rotation()[1]"
-                    data-ng-change="selectedChild.RotateTo([ selectedChild.Rotation()[0], rotation_y, selectedChild.Rotation()[2] ])"
+                    data-ng-change="selectedChild.RotateTo([ selectedChild.Rotation()[0], mesh_rotation_y, selectedChild.Rotation()[2] ])"
                 />
-                Z
+                <label>Z</label>
                 <input
                     type="number"
                     step="0.01"
-                    data-ng-model="rotation_z"
+                    data-ng-model="mesh_rotation_z"
                     data-ng-value="selectedChild.Rotation()[2]"
-                    data-ng-change="selectedChild.RotateTo([ selectedChild.Rotation()[0], selectedChild.Rotation()[1], rotation_z ])"
+                    data-ng-change="selectedChild.RotateTo([ selectedChild.Rotation()[0], selectedChild.Rotation()[1], mesh_rotation_z ])"
                     data-ng-readonly="selectedChild.Name === 'Camera'"
                 />
                 </form>
-            </td>
-            </tr>
-            <tr data-ng-show="showTest4()">
-            <th>Scale</th>
-            <td>
-                <form class='form_input_number_3'>
-                X
+            </div>
+            <div data-ng-show="!showTestCamera() && !showTestLightSource() && !showTestSkybox()">
+                <p>Scale</p>
+                <form class="form_input_number_3">
+                <label>X</label>
                 <input
                     type="number"
                     step="0.01"
-                    data-ng-model="scale_x"
+                    data-ng-model="mesh_scale_x"
                     data-ng-value="selectedChild.Scale()[0]"
-                    data-ng-change="selectedChild.ScaleTo([ scale_x, selectedChild.Scale()[1], selectedChild.Scale()[2] ])"
+                    data-ng-change="selectedChild.ScaleTo([ mesh_scale_x, selectedChild.Scale()[1], selectedChild.Scale()[2] ])"
                 />
-                Y
+                <label>Y</label>
                 <input
                     type="number"
                     step="0.01"
-                    data-ng-model="scale_y"
+                    data-ng-model="mesh_scale_y"
                     data-ng-value="selectedChild.Scale()[1]"
-                    data-ng-change="selectedChild.ScaleTo([ selectedChild.Scale()[0], scale_y, selectedChild.Scale()[2] ])"
+                    data-ng-change="selectedChild.ScaleTo([ selectedChild.Scale()[0], mesh_scale_y, selectedChild.Scale()[2] ])"
                 />
-                Z
+                <label>Z</label>
                 <input
                     type="number"
                     step="0.01"
-                    data-ng-model="scale_z"
+                    data-ng-model="mesh_scale_z"
                     data-ng-value="selectedChild.Scale()[2]"
-                    data-ng-change="selectedChild.ScaleTo([ selectedChild.Scale()[0], selectedChild.Scale()[1], scale_z ])"
+                    data-ng-change="selectedChild.ScaleTo([ selectedChild.Scale()[0], selectedChild.Scale()[1], mesh_scale_z ])"
                 />
                 </form>
-            </td>
-            </tr>
-            <tr data-ng-show="showTest4()">
-            <th>Auto-Rotate</th>
-            <td>
-                <form class='form_input_number_3'>
-                X
+            </div>
+            <div data-ng-show="!showTestCamera() && !showTestLightSource() && !showTestSkybox()">
+                <p>Auto-Rotate</p>
+                <form class="form_input_number_3">
+                <label>X</label>
                 <input
                     type="number"
                     step="0.01"
-                    data-ng-model="auto_rotation_x"
+                    data-ng-model="mesh_auto_rotation_x"
                     data-ng-value="selectedChild.AutoRotation()[0]"
-                    data-ng-change="selectedChild.SetAutoRotation([ auto_rotation_x, selectedChild.AutoRotation()[1], selectedChild.AutoRotation()[2] ])"
+                    data-ng-change="selectedChild.SetAutoRotation([ mesh_auto_rotation_x, selectedChild.AutoRotation()[1], selectedChild.AutoRotation()[2] ])"
                 />
-                Y
+                <label>Y</label>
                 <input
                     type="number"
                     step="0.01"
-                    data-ng-model="auto_rotation_y"
+                    data-ng-model="mesh_auto_rotation_y"
                     data-ng-value="selectedChild.AutoRotation()[1]"
-                    data-ng-change="selectedChild.SetAutoRotation([ selectedChild.AutoRotation()[0], auto_rotation_y, selectedChild.AutoRotation()[2] ])"
+                    data-ng-change="selectedChild.SetAutoRotation([ selectedChild.AutoRotation()[0], mesh_auto_rotation_y, selectedChild.AutoRotation()[2] ])"
                 />
-                Z
+                <label>Z</label>
                 <input
                     type="number"
                     step="0.01"
-                    data-ng-model="auto_rotation_z"
+                    data-ng-model="mesh_auto_rotation_z"
                     data-ng-value="selectedChild.AutoRotation()[2]"
-                    data-ng-change="selectedChild.SetAutoRotation([ selectedChild.AutoRotation()[0], selectedChild.AutoRotation()[1], auto_rotation_z ])"
+                    data-ng-change="selectedChild.SetAutoRotation([ selectedChild.AutoRotation()[0], selectedChild.AutoRotation()[1], mesh_auto_rotation_z ])"
                 />
                 <input
                     type="checkbox"
                     style="width:16px"
-                    data-ng-model="auto_rotate"
-                    data-ng-click="selectedChild.SetAutoRotate(auto_rotate)"
-                    data-ng-checked="selectedChild.AutoRotate"
+                    data-ng-model="mesh_auto_rotate"
+                    data-ng-checked="mesh_auto_rotate = selectedChild.AutoRotate"
+                    data-ng-change="selectedChild.SetAutoRotate(mesh_auto_rotate)"
                 />
                 </form>
-            </td>
-            </tr>
-            <tr>
-            <td colspan='2'>&nbsp;</td>
-            </tr>
-            <tr data-ng-show="showTest4()">
-            <th>{{ showTest8() ? 'Background' : 'Color' }}</th>
-            <td>
+            </div>
+            <div data-ng-show="showTestLightDirectional() || showTestLightSpot()">
+                <p>Direction</p>
+                <form class="form_input_number_3">
+                <label>X</label>
+                <input
+                    type="number"
+                    step="0.01"
+                    data-ng-model="light_direction_x"
+                    data-ng-value="selectedComponent.Direction()[0]"
+                    data-ng-change="selectedComponent.SetDirection([ light_direction_x, selectedComponent.Direction()[1], selectedComponent.Direction()[2] ])"
+                />
+                <label>Y</label>
+                <input
+                    type="number"
+                    step="0.01"
+                    data-ng-model="light_direction_y"
+                    data-ng-value="selectedComponent.Direction()[1]"
+                    data-ng-change="selectedComponent.SetDirection([ selectedComponent.Direction()[0], light_direction_y, selectedComponent.Direction()[2] ])"
+                />
+                <label>Z</label>
+                <input
+                    type="number"
+                    step="0.01"
+                    data-ng-model="light_direction_z"
+                    data-ng-value="selectedComponent.Direction()[2]"
+                    data-ng-change="selectedComponent.SetDirection([ selectedComponent.Direction()[0], selectedComponent.Direction()[1], light_direction_z ])"
+                />
+                </form>
+            </div>
+            <div data-ng-show="showTestLightPoint() || showTestLightSpot()">
+                <p><b>Attenuation</b></p>
+                <hr />
+            </div>
+            <div data-ng-show="showTestLightPoint() || showTestLightSpot()">
+                <p>Linear</p>
+                <input
+                    type="number"
+                    step="0.01"
+                    data-ng-model="light_linear"
+                    data-ng-value="selectedComponent.GetAttenuation().linear"
+                    data-ng-change="selectedComponent.SetAttenuationLinear(light_linear)"
+                />
+            </div>
+            <div data-ng-show="showTestLightPoint() || showTestLightSpot()">
+                <p>Quadratic</p>
+                <input
+                    type="number"
+                    step="0.01"
+                    data-ng-model="light_quadratic"
+                    data-ng-value="selectedComponent.GetAttenuation().quadratic"
+                    data-ng-change="selectedComponent.SetAttenuationQuadratic(light_quadratic)"
+                />
+            </div>
+            <div data-ng-show="showTestLightSpot()">
+                <p><b>Cone</b></p>
+                <hr />
+            </div>
+            <div data-ng-show="showTestLightSpot()">
+                <p>Inner Angle (rad)</p>
+                <input
+                    type="number"
+                    step="0.01"
+                    data-ng-model="light_inner_angle"
+                    data-ng-value="selectedComponent.ConeInnerAngle()"
+                    data-ng-change="selectedComponent.SetConeInnerAngle(light_inner_angle)"
+                />
+            </div>
+            <div data-ng-show="showTestLightSpot()">
+                <p>Outer Angle (rad)</p>
+                <input
+                    type="number"
+                    step="0.01"
+                    data-ng-model="light_outer_angle"
+                    data-ng-value="selectedComponent.ConeOuterAngle()"
+                    data-ng-change="selectedComponent.SetConeOuterAngle(light_outer_angle)"
+                />
+            </div>
+            <div data-ng-show="!showTestCamera() && !showTestSkybox()">
+                <p><b>Material</b></p>
+                <hr />
+            </div>
+            <div data-ng-show="!showTestCamera() && !showTestLightSource() && !showTestSkybox()">
+                <p>{{ showTestHUD() ? 'Background' : 'Color' }}</p>
                 <input
                     type="color"
-                    style="width:88%"
-                    data-ng-model="color"
-                    value="#000000"
-                    data-ng-value="color='#' + (showTest4() ? selectedChild.ColorHex() : '000000')"
-                    data-ng-init="color='#' + (showTest4() ? selectedChild.ColorHex() : '000000')"
-                    data-ng-change="selectedChild.SetColorHex(color); this.value=''"
+                    style="width:80%"
+                    data-ng-model="mesh_diffuse"
+                    data-ng-value="('#' + selectedChild.ColorHex())"
+                    data-ng-change="selectedChild.SetColorHex(mesh_diffuse)"
                 />
-            </td>
-            </tr>
-            <tr data-ng-show="showTest8()">
-            <th>Opacity (alpha)</th>
-            <td>
-                0%
+            </div>
+            <div data-ng-show="!showTestCamera() && !showTestLightSource() && !showTestSkybox()">
+                <p>Specular Intensity</p>
+                <input
+                    type="color"
+                    style="width:80%"
+                    data-ng-model="mesh_spec_intensity"
+                    data-ng-value="('#' + selectedChild.SpecIntensityHex())"
+                    data-ng-change="selectedChild.SetSpecIntensityHex(mesh_spec_intensity)"
+                />
+            </div>
+            <div data-ng-show="!showTestCamera() && !showTestLightSource() && !showTestSkybox()">
+                <p>Specular Shininess</p>
+                <input
+                    type="number"
+                    step="1"
+                    data-ng-model="mesh_spec_shininess"
+                    data-ng-value="selectedChild.ComponentMaterial.specular.shininess"
+                    data-ng-change="selectedChild.ComponentMaterial.specular.shininess = mesh_spec_shininess"
+                />
+            </div>
+            <div data-ng-show="showTestLightSource()">
+                <p>Ambient</p>
+                <input
+                    type="color"
+                    style="width:80%"
+                    data-ng-model="light_ambient"
+                    data-ng-value="('#' + selectedComponent.GetMaterialHex().ambient)"
+                    data-ng-change="selectedComponent.SetAmbientHex(light_ambient)"
+                />
+            </div>
+            <div data-ng-show="showTestLightSource()">
+                <p>Color</p>
+                <input
+                    type="color"
+                    style="width:80%"
+                    data-ng-model="light_diffuse"
+                    data-ng-value="('#' + (selectedComponent.Active() ? selectedComponent.GetMaterialHex().diffuse : '000000'))"
+                    data-ng-change="selectedComponent.SetColorHex(light_diffuse)"
+                />
+            </div>
+            <div data-ng-show="showTestLightSource()">
+                <p>Specular Intensity</p>
+                <input
+                    type="color"
+                    style="width:80%"
+                    data-ng-model="light_spec_intensity"
+                    data-ng-value="('#' + selectedComponent.GetMaterialHex().specular.intensity)"
+                    data-ng-change="selectedComponent.SetSpecularIntensityHex(light_spec_intensity)"
+                />
+            </div>
+            <div data-ng-show="showTestLightSource()">
+                <p>Specular Shininess</p>
+                <input
+                    type="number"
+                    step="1"
+                    data-ng-model="light_spec_shininess"
+                    data-ng-value="selectedComponent.GetMaterial().specular.shininess"
+                    data-ng-change="selectedComponent.SetSpecularShininess(light_spec_shininess)"
+                />
+            </div>
+            <div data-ng-show="showTestHUD()">
+                <p>Opacity (alpha)</p>
+                <label>0%</label>
                 <input
                     type="range"
                     style="width:70%"
                     min="0"
                     max="1"
                     step="0.01"
-                    data-ng-model="color_alpha"
-                    data-ng-value="selectedChild.Color()[3]"
-                    data-ng-change="selectedChild.SetColor([ selectedChild.Color()[0], selectedChild.Color()[1], selectedChild.Color()[2], color_alpha ])"
+                    data-ng-model="hud_color_alpha"
+                    data-ng-value="selectedChild.ComponentMaterial.diffuse[3]"
+                    data-ng-change="selectedChild.ComponentMaterial.diffuse[3] = hud_color_alpha; selectedComponent.Update();"
                 />
-                100%
-                <br />
-            </td>
-            </tr>
-            <tr data-ng-show="showTest8()">
-            <th>Transparency</th>
-            <td>
+                <label>100%</label>
+            </div>
+            <div data-ng-show="showTestHUD()">
+                <label>Transparency</label>
                 <input
                     type="checkbox"
-                    data-ng-model="transparency"
-                    data-ng-click="selectedComponent.SetTransparent(transparency)"
-                    data-ng-checked="selectedComponent.Transparent()"
+                    data-ng-model="hud_transparency"
+                    data-ng-checked="hud_transparency = selectedComponent.Transparent"
+                    data-ng-change="selectedComponent.Transparent = hud_transparency; selectedComponent.Update();"
                 />
-            </td>
-            </tr>
-            <tr>
-                <td colspan='2'>&nbsp;</td>
-            </tr>
-            <tr data-ng-show="showTest8()">
-            <th>Text</th>
-            <td>
+            </div>
+            <div data-ng-show="showTestHUD()">
+                <p><b>Text</b></p>
+                <hr />
+            </div>
+            <div data-ng-show="showTestHUD()">
+                <p>Text</p>
                 <input
                     type="text"
                     size="38"
+                    data-ng-model="hud_text"
                     data-ng-value="selectedComponent.Text()"
-                    data-ng-model="text"
-                    data-ng-change="selectedComponent.Update(text)"
+                    data-ng-change="selectedComponent.Update(hud_text)"
                 />
-            </td>
-            </tr>
-            <tr data-ng-show="showTest8()">
-            <th>Text Align</th>
-            <td>
+            </div>
+            <div data-ng-show="showTestHUD()">
+                <p>Alignment</p>
                 <select
                     data-ng-options="a for a in alignments"
-                    data-ng-model="text_align"
-                    data-ng-init="text_align = (showTest8() ? selectedComponent.TextAlign() : alignments[4])"
-                    data-ng-change="selectedComponent.SetTextAlign(text_align)">
+                    data-ng-model="hud_text_align"
+                    data-ng-init="(showTestHUD() ? selectedComponent.TextAlign : alignments[4])"
+                    data-ng-change="selectedComponent.TextAlign = hud_text_align; selectedComponent.Update();">
                     <option style="display:none" value="">Text Align</option>
                 </select>
-            </td>
-            </tr>
-            <tr data-ng-show="showTest8()">
-            <th>Text Font</th>
-            <td>
+            </div>
+            <div data-ng-show="showTestHUD()">
+                <p>Font</p>
                 <select
                     data-ng-options="f for f in fonts"
-                    data-ng-model="text_font"
-                    data-ng-init="text_font = (showTest8() ? selectedComponent.TextFont() : fonts[0])"
-                    data-ng-change="selectedComponent.SetTextFont(text_font)">
+                    data-ng-model="hud_text_font"
+                    data-ng-init="(showTestHUD() ? selectedComponent.TextFont : fonts[0])"
+                    data-ng-change="selectedComponent.TextFont = hud_text_font; selectedComponent.Update();">
                     <option style="display:none" value="">Text Font</option>
                 </select>
-            </td>
-            </tr>
-            <tr data-ng-show="showTest8()">
-            <th>Text Size</th>
-            <td>
+            </div>
+            <div data-ng-show="showTestHUD()">
+                <p>Size</p>
                 <input
                     type="number"
                     min="10"
                     max="100"
                     step="1"
-                    data-ng-model="text_size"
-                    value="20"
-                    data-ng-value="(showTest8() ? selectedComponent.TextSize() : 20)"
-                    data-ng-change="selectedComponent.SetTextSize(text_size)"
+                    data-ng-model="hud_text_size"
+                    data-ng-value="(showTestHUD() ? selectedComponent.TextSize : 20)"
+                    data-ng-change="selectedComponent.TextSize = hud_text_size; selectedComponent.Update();"
                 />
-            </td>
-            </tr>
-            <tr data-ng-show="showTest8()">
-            <th>Text Color</th>
-            <td>
+            </div>
+            <div data-ng-show="showTestHUD()">
+                <p>Color</p>
                 <input
                     type="color"
-                    style="width:88%"
-                    data-ng-model="text_color"
-                    value="#000000"
-                    data-ng-value="(showTest8() ? selectedComponent.TextColor() : '#000000')"
-                    data-ng-init="text_color=(showTest8() ? selectedComponent.TextColor() : '#000000')"
-                    data-ng-change="selectedComponent.SetTextColor(text_color)"
+                    style="width:80%"
+                    data-ng-model="hud_text_color"
+                    data-ng-value="selectedComponent.TextColor"
+                    data-ng-change="selectedComponent.TextColor = hud_text_color; selectedComponent.Update();"
                 />
-            </td>
-            </tr>
-            <tr data-ng-show="showTest8()">
-            <th>Texture</th>
-            <td>
-                <input type="text" size="28" data-ng-value="selectedChild.Texture(0).File()" readonly />
-                <input type="file" accept="image/*" onchange="angular.element(this).scope().loadTextureFile(this, 0)" />
-                <button data-ng-click="selectedChild.RemoveTexture(0)">X</button>
-            </td>
-            </tr>
-            <tr data-ng-show="showTest8()">
-            <td colspan='2'>&nbsp;</td>
-            </tr>
-            <tr data-ng-show="!showTest8()" data-ng-repeat="t in getTextures() track by $index">
-            <th style="vertical-align:top; padding-top:5px">
-                Texture #{{ $index + 1 }}
-            </th>
-            <td>
-                <input type="text" size="28" data-ng-value="t.File()" readonly />
-                <input
-                    data-ng-show="showTest5()"
-                    type="file" accept="image/*"
-                    onchange="angular.element(this).scope().loadTextureFile(this, angular.element(this).scope().$index)"
-                />
-                <button data-ng-show="showTest5()" data-ng-click="selectedChild.RemoveTexture($index)">X</button>
-                <div style="padding-top:2px" data-ng-show="t.File().length > 0">
-                <div data-ng-show="showTest5()">
-                Flip Y
-                <input
-                    type="checkbox"
-                    style="margin-right:15px"
-                    data-ng-model="flip"
-                    data-ng-click="t.SetFlipY(flip)"
-                    data-ng-checked="t.FlipY()"
-                />
-                Repeat
-                <input
-                    type="checkbox"
-                    style="margin-right:15px"
-                    data-ng-model="repeat"
-                    data-ng-click="t.SetRepeat(repeat)"
-                    data-ng-checked="t.Repeat()"
-                />
+            </div>
+            <div data-ng-show="showTestHUD()">
+                <p><b>Texture</b></p>
+                <hr />
+            </div>
+            <div data-ng-show="showTestHUD()">
+                <div style="margin-bottom:5px">
+                    Texture
                 </div>
-                Tiling U
-                <input
-                    type="number"
-                    style="width:50px"
-                    step="0.01"
-                    min="1.0"
-                    data-ng-value="t.Scale()[0]"
-                    data-ng-model="scale_u"
-                    data-ng-change="t.ScaleTo([ scale_u, t.Scale()[1] ])"
-                />
-                V
-                <input
-                    type="number"
-                    style="width:50px"
-                    step="0.01"
-                    min="1.0"
-                    data-ng-value="t.Scale()[1]"
-                    data-ng-model="scale_v"
-                    data-ng-change="t.ScaleTo([ t.Scale()[0], scale_v ])"
-                />
+                <div style="margin-bottom:5px">
+                    <input
+                        type="text"
+                        style="width:80%"
+                        data-ng-value="selectedChild.Textures[0].File()"
+                        readonly
+                    />
                 </div>
-            </td>
-            </tr>
-            <tr data-ng-show="!showTest8()"><td colspan='2'>&nbsp;</td></tr>
-            <tr data-ng-show="showTest9()">
-            <th>Bounding Volume</th>
-            <td>
-                <select onchange="angular.element(this).scope().selectedChild.SetBoundingVolume(this.value); this.value='';">
+                <button id="texture_load">
+                    <label for="texture_load_input">Load</label>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        id="texture_load_input"
+                        onchange="angular.element(this).scope().loadTextureFile(this, 0)"
+                    />
+                </button>
+                <button style="height:30px" data-ng-click="selectedChild.RemoveTexture(0)">Remove</button>
+            </div>
+            <div data-ng-show="!showTestHUD() && !showTestCamera() && !showTestLightSource()">
+                <p><b>Textures</b></p>
+                <hr />
+            </div>
+            <div
+                data-ng-show="!showTestHUD() && !showTestCamera() && !showTestLightSource()"
+                data-ng-repeat="t in getTextures() track by $index"
+            >
+                <div style="margin-bottom:5px" data-ng-show="showTestSkybox()">
+                    {{ labelsSkybox[$index] }}
+                </div>
+                <div style="margin-bottom:5px" data-ng-show="showTestTerrain()">
+                    {{ labelsTerrain[$index] }}
+                </div>
+                <div style="margin-bottom:5px" data-ng-show="showTestWater()">
+                    {{ labelsWater[$index] }}
+                </div>
+                <div style="margin-bottom:5px" data-ng-show="showTestModel()">
+                    {{ labelsDefault[$index] }}
+                </div>
+
+                <div style="margin-bottom:5px" data-ng-show="showTestSkybox()">
+                    <input type="text" style="width:80%" data-ng-value="selectedChild.Textures[0].File($index)" readonly />
+                </div>
+                <div style="margin-bottom:5px" data-ng-show="showTestTerrain()">
+                    <input type="text" style="width:80%" data-ng-value="selectedChild.Textures[$index].File()" readonly />
+                </div>
+                <div style="margin-bottom:5px" data-ng-show="showTestWater()">
+                    <input type="text" style="width:80%" data-ng-value="selectedComponent.FBO().Textures[$index + 2].File()" readonly />
+                </div>
+                <div style="margin-bottom:5px" data-ng-show="showTestModel()">
+                    <input type="text" style="width:80%" data-ng-value="selectedChild.Textures[$index].File()" readonly />
+                </div>
+                <div style="margin-bottom:5px; float:left" data-ng-show="showTestModel()">
+                    <label>Flip Y</label>
+                    <input
+                        type="checkbox"
+                        style="margin-right:15px"
+                        data-ng-model="texture_flip"
+                        data-ng-checked="texture_flip = t.FlipY()"
+                        data-ng-change="t.SetFlipY(texture_flip)"
+                    />
+                    <label>Repeat</label>
+                    <input
+                        type="checkbox"
+                        style="margin-right:15px"
+                        data-ng-model="texture_repeat"
+                        data-ng-checked="texture_repeat = t.Repeat()"
+                        data-ng-change="t.SetRepeat(texture_repeat)"
+                    />
+                </div>
+                <div style="margin-bottom:5px">
+                    <label>Tiling U</label>
+                    <input
+                        type="number"
+                        style="width:50px"
+                        step="0.01"
+                        min="1.0"
+                        data-ng-model="texture_scale_u"
+                        data-ng-value="t.Scale()[0]"
+                        data-ng-change="t.ScaleTo([ texture_scale_u, t.Scale()[1] ])"
+                    />
+                    <label>V</label>
+                    <input
+                        type="number"
+                        style="width:50px"
+                        step="0.01"
+                        min="1.0"
+                        data-ng-model="texture_scale_v"
+                        data-ng-value="t.Scale()[1]"
+                        data-ng-change="t.ScaleTo([ t.Scale()[0], texture_scale_v ])"
+                    />
+                </div>
+                <button id="texture_load">
+                    <label for="texture_load_input">Load</label>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        id="texture_load_input"
+                        onchange="angular.element(this).scope().loadTextureFile(this, angular.element(this).scope().$index)"
+                    />
+                </button>
+                <button style="height:30px" data-ng-click="selectedChild.RemoveTexture($index)">Remove</button>
+            </div>
+            <div data-ng-show="showTestModel()">
+                <p><b>Physics</b></p>
+                <hr />
+            </div>
+            <div data-ng-show="showTestModel()">
+                <p>Bounding Volume</p>
+                <select onchange="angular.element(this).scope().selectedChild.SetBoundingVolume(this.value)">
                     <option
                         data-ng-repeat="v in boundingVolumes"
                         data-ng-selected="selectedChild.BoundingVolumeType() == v">
                         {{ v }}
                     </option>
                 </select>
-            </td>
-            </tr>
-            <tr data-ng-show="showTest6()">
-            <th>Size</th>
-            <td>
+            </div>
+            <div data-ng-show="showTestTerrain()">
+                <p><b>Terrain</b></p>
+                <hr />
+            </div>
+            <div data-ng-show="showTestTerrain()">
+                <p>Size</p>
                 <input
                     type="number"
                     style="width:80px; margin-right:37px"
                     step="1"
                     min="5"
                     max="100"
+                    data-ng-model="terrain_size"
                     data-ng-value="selectedComponent.Size()"
-                    data-ng-model="size"
-                    data-ng-change="selectedComponent.Resize(size, selectedComponent.Octaves(), selectedComponent.Redistribution())"
+                    data-ng-change="selectedComponent.Resize(terrain_size, selectedComponent.Octaves(), selectedComponent.Redistribution())"
                 />
-            </td>
-            </tr>
-            <tr data-ng-show="showTest6()">
-            <th>Octaves</th>
-            <td>
-                1.0
+            </div>
+            <div data-ng-show="showTestTerrain()">
+                <p>Octaves</p>
+                <label>1.0</label>
                 <input
                     type="range"
                     step="1"
                     min="1"
                     max="10"
+                    data-ng-model="terrain_octaves"
                     data-ng-value="selectedComponent.Octaves()"
-                    data-ng-model="octaves"
-                    data-ng-change="selectedComponent.Resize(selectedComponent.Size(), octaves, selectedComponent.Redistribution())"
+                    data-ng-change="selectedComponent.Resize(selectedComponent.Size(), terrain_octaves, selectedComponent.Redistribution())"
                 />
-                10.0
-            </td>
-            </tr>
-            <tr data-ng-show="showTest6()">
-            <th>Redistribution</th>
-            <td>
-                0.01
+                <label>10.0</label>
+            </div>
+            <div data-ng-show="showTestTerrain()">
+                <p>Redistribution</p>
+                <label>0.01</label>
                 <input
                     type="range"
                     step="0.01"
                     min="0.01"
                     max="10.0"
+                    data-ng-model="terrain_redistribution"
                     data-ng-value="selectedComponent.Redistribution()"
-                    data-ng-model="redistribution"
-                    data-ng-change="selectedComponent.Resize(selectedComponent.Size(), selectedComponent.Octaves(), redistribution)"
+                    data-ng-change="selectedComponent.Resize(selectedComponent.Size(), selectedComponent.Octaves(), terrain_redistribution)"
                 />
-                10.0
-            </td>
-            </tr>
-            <tr data-ng-show="showTest7()">
-            <th>Speed</th>
-            <td>
-                0.01
+                <label>10.0</label>
+            </div>
+            <div data-ng-show="showTestWater()">
+                <p><b>Water</b></p>
+                <hr />
+            </div>
+            <div data-ng-show="showTestWater()">
+                <p>Speed</p>
+                <label>0.01</label>
                 <input
                     type="range"
                     step="0.01"
                     min="0.01"
                     max="0.5"
+                    data-ng-model="water_speed"
                     data-ng-value="selectedComponent.FBO().Speed"
-                    data-ng-model="speed"
-                    data-ng-change="selectedComponent.FBO().Speed = speed"
+                    data-ng-change="selectedComponent.FBO().Speed = water_speed"
                 />
-                0.5
-            </td>
-            </tr>
-            <tr data-ng-show="showTest7()">
-            <th>Wave Strength</th>
-            <td>
-                0.01
+                <label>0.5</label>
+            </div>
+            <div data-ng-show="showTestWater()">
+                <p>Wave Strength</p>
+                <label>0.01</label>
                 <input
                     type="range"
                     step="0.01"
                     min="0.01"
                     max="1.0"
+                    data-ng-model="water_wave_strength"
                     data-ng-value="selectedComponent.FBO().WaveStrength"
-                    data-ng-model="wave_strength"
-                    data-ng-change="selectedComponent.FBO().WaveStrength = wave_strength"
+                    data-ng-change="selectedComponent.FBO().WaveStrength = water_wave_strength"
                 />
-                1.0
-            </td>
-            </tr>
-            <tr>
-            <td colspan='2'>&nbsp;</td>
-            </tr>
-            </table>
+                <label>1.0</label>
+            </div>
         </div>
-        </div>
-        <br /><br />
     </td>
     </tr>
     </table>
     </div>
-    <p>
-        <a href="http://www.jammary.com" target="_blank">{{ copyright }}</a> | {{ tested }}
-    </p>
-    <p>
-        <a id="w3_validator_html" href="http://validator.w3.org/check?uri=referer" target="_blank">
-            <img src="https://www.w3.org/html/logo/badge/html5-badge-h-solo.png" alt="HTML5 Powered" title="HTML5 Powered" />
-        </a>
-        <a id="w3_validator_css" href="http://jigsaw.w3.org/css-validator/check/referer" target="_blank">
-            <img src="http://jigsaw.w3.org/css-validator/images/vcss-blue" alt="Valid CSS!" title="Valid CSS!" />
-        </a>
-    </p>
-    <div class="leaderboard_728x90">
-        <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        <ins
-            class="adsbygoogle"
-            style="display:inline-block; width:728px; height:90px"
-            data-ad-client="ca-pub-4533895183221047"
-            data-ad-slot="2414665538">
-        </ins>
-        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </div>
-    <!--
-    <div class="leaderboard_728x90">
-        <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-        <ins
-            class="adsbygoogle"
-            style="display:inline-block; width:728px; height:90px"
-            data-ad-client="ca-pub-4533895183221047"
-            data-ad-slot="2414665538">
-        </ins>
-        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </div>
-    -->
-    <br /><br />
+    <footer>
+        <nav>
+            <a href="http://validator.w3.org/check?uri=referer" target="_blank">
+                <img src="https://www.w3.org/html/logo/badge/html5-badge-h-solo.png" alt="HTML5 Powered" title="HTML5 Powered" />
+            </a>
+            <a href="http://www.jammary.com" target="_blank">{{ copyright }}</a> | {{ tested }}
+            <a href="http://jigsaw.w3.org/css-validator/check/referer" target="_blank">
+                <img src="http://jigsaw.w3.org/css-validator/images/vcss-blue" alt="Valid CSS!" title="Valid CSS!" />
+            </a>
+        </nav>
+    </footer>
 </body>
 
 </html>

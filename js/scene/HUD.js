@@ -5,63 +5,24 @@
 class HUD extends Component
 {
     /**
-    * @param {string} quad
+    * @param {string} quadText
+    * @param {string} quadFile
     */
-    constructor(quad)
+    constructor(quadText, quadFile)
     {
         super("HUD");
+        
+        this.type     = ComponentType.HUD;
+        this.Children = Utils.LoadModel(quadText, quadFile, this);
+        this.isValid  = (this.Children.length > 0);
 
-        let text        = "";
-        let textAlign   = "Middle-Center";
-        let textColor   = "#000000";
-        let textFont    = "Arial";
-        let textSize    = 20;
-        let transparent = false;
+        this.TextAlign   = "Middle-Center";
+        this.TextColor   = "#000000";
+        this.TextFont    = "Arial";
+        this.TextSize    = 20;
+        this.Transparent = false;
 
-        /**
-        * @param {string} align
-        */
-        this.SetTextAlign = function(align)
-        {
-            textAlign = align;
-            this.Update(text);
-        }
-
-        /**
-        * @param {string} hexRGB
-        */
-        this.SetTextColor = function(hexRGB)
-        {
-            textColor = hexRGB;
-            this.Update(text);
-        }
-
-        /**
-        * @param {string} font
-        */
-        this.SetTextFont = function(font)
-        {
-            textFont = font;
-            this.Update(text);
-        }
-
-        /**
-        * @param {number} size
-        */
-        this.SetTextSize = function(size)
-        {
-            textSize = size;
-            this.Update(text);
-        }
-
-        /**
-        * @param {boolean} newTransparent
-        */
-        this.SetTransparent = function(newTransparent)
-        {
-            transparent = newTransparent;
-            this.Update(text);
-        }
+        let text = "";
 
         /**
         * @return {string}
@@ -72,51 +33,12 @@ class HUD extends Component
         }
 
         /**
-        * @return {string}
-        */
-        this.TextAlign = function()
-        {
-            return textAlign;
-        }
-
-        /**
-        * @return {string}
-        */
-        this.TextColor = function()
-        {
-            return textColor;
-        }
-
-        /**
-        * @return {string}
-        */
-        this.TextFont = function()
-        {
-            return textFont;
-        }
-
-        /**
-        * @return {number}
-        */
-        this.TextSize = function()
-        {
-            return textSize;
-        }
-
-        /**
-        * @return {boolean}
-        */
-        this.Transparent = function()
-        {
-            return transparent;
-        }
-
-        /**
         * @param {string} newText
         */
-        this.Update = function(newText)
+        this.Update = function(newText = null)
         {
-            text = newText;
+            if (newText)
+                text = newText;
 
             var canvas = null;
             var gl2D   = null;
@@ -133,20 +55,20 @@ class HUD extends Component
 
             if (gl2D)
             {
-                if (transparent) {
+                if (this.Transparent) {
                     gl2D.clearRect(0, 0, gl2D.canvas.width, gl2D.canvas.height);
                 } else {
-                    gl2D.fillStyle = ("#" + Utils.ToColorHex(this.Children[0].Color()));
+                    gl2D.fillStyle = ("#" + Utils.ToColorHex(this.Children[0].ComponentMaterial.diffuse));
                     gl2D.fillRect(0, 0, gl2D.canvas.width, gl2D.canvas.height);
                 }
 
                 if (this.Children[0].IsTextured())
                     gl2D.drawImage(this.Children[0].Textures[0].Image(), 0, 0, gl2D.canvas.width, gl2D.canvas.height);
 
-                gl2D.fillStyle = textColor;
-                gl2D.font      = ("bold " + textSize + "px " + textFont);
+                gl2D.fillStyle = this.TextColor;
+                gl2D.font      = ("bold " + this.TextSize + "px " + this.TextFont);
 
-                var alignment          = textAlign.split("-");
+                var alignment          = this.TextAlign.split("-");
                 var horizontalAlign    = alignment[1].toLowerCase();
                 var verticalAlign      = alignment[0].toLowerCase();
                 var horizontalPosition = 0;
@@ -168,18 +90,14 @@ class HUD extends Component
                 gl2D.textBaseline = verticalAlign;
                 gl2D.fillText(text, horizontalPosition, verticalPosition);
 
-                var texture = new Texture(gl2D.canvas, "", false, false, true);
+                var texture = new Texture([ { result: gl2D.canvas } ], TextureType.TEX_2D, FBOType.UNKNOWN, 0, 0, false, true);
                 this.Children[0].LoadTexture(texture, 5);
             }
         }
 
         /**
-         * MAIN
-         */
-        this.type     = ComponentType.HUD;
-        this.Children = Utils.LoadModel(quad, this);
-        this.isValid  = (this.Children.length > 0);
-
+        * MAIN
+        */
         if (this.isValid && this.Children[0])
         {
             this.Children[0].Name = "Mesh (HUD)";

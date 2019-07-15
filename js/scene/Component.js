@@ -9,32 +9,35 @@ class Component
     * @param {Array<number>} position
     * @param {Array<number>} rotation
     * @param {Array<number>} scale
-    * @param {Array<number>} color
     */
-    constructor(name, position = [ 0.0, 0.0, 0.0 ], rotation = [ 0.0, 0.0, 0.0 ], scale = [ 1.0, 1.0, 1.0 ], color = [ 0.8, 0.8, 0.8, 1.0 ])
+    // @param {Array<number>} color
+    constructor(name, position = [ 0.0, 0.0, 0.0 ])
     {
-        this.autoRotation      = [];
-        this.color             = color;
+        /**
+        * MAIN
+        */
+        this.autoRotation      = [ 0.0, 0.0, 0.0 ];
         this.isValid           = false;
         this.matrix            = mat4.create();
         this.modelText         = "";
         this.position          = position;
-        this.rotation          = rotation;
+        this.rotation          = [ 0.0, 0.0, 0.0 ];
         this.rotationMatrix    = mat4.create();
-        this.scale             = scale;
+        this.scale             = [ 1.0, 1.0, 1.0 ];
         this.scaleMatrix       = mat4.create();
         this.translationMatrix = mat4.create();
         this.type              = ComponentType.UNKNOWN;
 
         this.AutoRotate           = false;
         this.Children             = [];
+        this.ComponentMaterial    = new Material();
         this.LockToParentPosition = false;
         this.LockToParentRotation = false;
         this.LockToParentScale    = false;
         this.Name                 = name;
         this.Parent               = null;
         this.Textures             = [ null, null, null, null, null, null ];
-
+        
         /**
         * @return {Array<number>}
         */
@@ -44,27 +47,11 @@ class Component
         }
 
         /**
-        * @return {Array<number>}
-        */
-        this.Color = function()
-        {
-            return this.color;
-        }
-
-        /**
         * @return {string}
         */
         this.ColorHex = function()
         {
-            return Utils.ToColorHex(this.color);
-        }
-
-        /**
-        * @return {string}
-        */
-        this.JSON = function()
-        {
-            return this.modelText;
+            return Utils.ToColorHex(this.ComponentMaterial.diffuse);
         }
 
         /**
@@ -149,7 +136,8 @@ class Component
         }
         
         /**
-        * @param {object} child
+        * @param  {object} child
+        * @return {number}
         */
         this.RemoveChild = function(child)
         {
@@ -163,7 +151,7 @@ class Component
 
             this.Children.splice(index, 1);
             
-            return 0;
+            return index;
         }
 
         /**
@@ -279,28 +267,27 @@ class Component
         }
 
         /**
-        * @param {Array<number>} newColor
-        */
-        this.SetColor = function(newColor)
-        {
-            if (!isNaN(parseFloat(newColor[0])) &&
-                !isNaN(parseFloat(newColor[1])) &&
-                !isNaN(parseFloat(newColor[2])))
-            {
-                this.color = newColor;
-
-                if (this.Parent.Text)
-                    this.Parent.Update(this.Parent.Text());
-            }
-        }
-
-        /**
         * @param {string} newColor
         */
         this.SetColorHex = function(newColor)
         {
             let rgb = Utils.ToColorRGB(newColor.substr(1));
-            this.SetColor([ rgb[0], rgb[1], rgb[2], 1.0 ]);
+            this.ComponentMaterial.diffuse = [ rgb[0], rgb[1], rgb[2], 1.0 ];
+
+            if (this.Parent.Text)
+                this.Parent.Update(this.Parent.Text());
+        }
+
+        /**
+        * @param {string} newSpecIntensity
+        */
+        this.SetSpecIntensityHex = function(newSpecIntensity)
+        {
+            let rgb = Utils.ToColorRGB(newSpecIntensity.substr(1));
+            this.ComponentMaterial.specular.intensity = [ rgb[0], rgb[1], rgb[2], 1.0 ];
+
+            if (this.Parent.Text)
+                this.Parent.Update(this.Parent.Text());
         }
 
         /**
@@ -310,6 +297,14 @@ class Component
         {
             if (newName)
                 this.Name = newName;
+        }
+
+        /**
+        * @return {string}
+        */
+        this.SpecIntensityHex = function()
+        {
+            return Utils.ToColorHex(this.ComponentMaterial.specular.intensity);
         }
 
         /**

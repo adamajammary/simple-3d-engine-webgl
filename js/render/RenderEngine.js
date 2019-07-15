@@ -15,7 +15,7 @@ class RenderEngine
     /**
     * @param {Array<number>} color
     */
-    static Clear(color)
+    static clear(color)
     {
         let gl = RenderEngine.GLContext();
 
@@ -24,76 +24,148 @@ class RenderEngine
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
     }
 
-    static Draw()
+    static createDepthFBO()
     {
-        // WATER RENDER PASSES
-        for (let water of RenderEngine.Waters)
+        if (RenderEngine.Renderables.length === 0)
+            return;
+
+	    let cleared = false;
+
+        for (let i = 0; i < MAX_LIGHT_SOURCES; i++)
         {
-            let cameraPosition = RenderEngine.Camera.Position();
-            let waterPosition  = water.Position();
-            let waterScale     = water.Scale();
-            let cameraDistance = (2.0 * (cameraPosition[1] - waterPosition[1]));
+            if (!Utils.LightSources[i])
+                continue;
 
-            // WATER REFLECTION PASS - ABOVE WATER
-            RenderEngine.Camera.MoveBy([0.0, -cameraDistance, 0.0]);
-            RenderEngine.Camera.InvertPitch();
+            let fbo   = null;
+            let light = Utils.LightSources[i];
 
-            water.Parent.FBO().BindReflection();
+            switch (light.SourceType()) {
+                case LightType.DIRECTIONAL: fbo = Utils.DepthMap2D;   break;
+                case LightType.POINT:       fbo = Utils.DepthMapCube; break;
+                case LightType.SPOT:        fbo = Utils.DepthMap2D;   break;
+                default: break;
+            }
 
-            let clipMax = [  waterScale[0], waterScale[1],     waterScale[2] ];
-            let clipMin = [ -waterScale[0], waterPosition[1], -waterScale[2] ];
+            if (!fbo)
+                continue;
 
-            RenderEngine.Clear([ 0.0, 0.0, 1.0, 1.0 ]);
-            RenderEngine.DrawSkybox(true,      clipMax, clipMin);
-            RenderEngine.DrawTerrains(true,    clipMax, clipMin);
-            RenderEngine.DrawRenderables(true, clipMax, clipMin);
-            
-            water.Parent.FBO().UnbindReflection();
+            let drawProperties = new DrawProperties();
 
-            RenderEngine.Camera.InvertPitch();
-            RenderEngine.Camera.MoveBy([0.0, cameraDistance, 0.0]);
+            drawProperties.DepthLayer = i;
+            drawProperties.FBO        = fbo;
+            drawProperties.Light      = light;
 
-            // WATER REFRACTION PASS - BELOW WATER
-            water.Parent.FBO().BindRefraction();
+            if (light.SourceType() === LightType.POINT)
+                drawProperties.Shader = ShaderID.DEPTH_OMNI;
+            else
+                drawProperties.Shader = ShaderID.DEPTH;
 
-            clipMax = [  waterScale[0],  waterPosition[1], waterScale[2] ];
-            clipMin = [ -waterScale[0], -waterScale[1],   -waterScale[2] ];
+            // BIND
+            fbo.Bind(drawProperties.DepthLayer);
 
-            RenderEngine.Clear([ 0.0, 0.0, 1.0, 1.0 ]);
-            RenderEngine.DrawSkybox(true,      clipMax, clipMin);
-            RenderEngine.DrawTerrains(true,    clipMax, clipMin);
-            RenderEngine.DrawRenderables(true, clipMax, clipMin);
+            // CLEAR
+            if (light.SourceType() === LightType.POINT)
+            {
+                if (!cleared) {
+                    RenderEngine.clear(CLEAR_VALUE_DEPTH, drawProperties);
+                    cleared = true;
+                }
+            } else {
+                RenderEngine.clear(CLEAR_VALUE_DEPTH, drawProperties);
+            }
 
-            water.Parent.FBO().UnbindRefraction();
+            // DRAW
+            RenderEngine.drawRenderables(drawProperties);
+
+            // UNBIND
+            fbo.Unbind();
         }
-        
-        // DEFAULT RENDER PASS
-        RenderEngine.Clear([ 0.0, 0.2, 0.4, 1.0 ]);
-        RenderEngine.DrawSelected();
-        RenderEngine.DrawBoundingVolumes();
-        RenderEngine.DrawScene();
-
-        return 0;
     }
 
-    static DrawBoundingVolumes()
+    static createWaterFBOs()
+    {
+        for (let component of RenderEngine.Renderables)
+        {
+            if (!component || (component.Type() !== ComponentType.WATER))
+                continue;
+    
+            let water = component.Parent;
+    
+            if (!water)
+                continue;
+    
+            let position       = component.Position();
+            let scale          = vec3.create();
+            let cameraDistance = ((RenderEngine.Camera.Position().y - position.y) * 2.0);
+    
+            vec3.add(scale, component.Scale(), vec3.fromValues(5.0, 5.0, 5.0));
+
+            // WATER REFLECTION PASS - ABOVE WATER
+            RenderEngine.Camera.MoveBy(vec3.fromValues(0.0, -cameraDistance, 0.0));
+            RenderEngine.Camera.InvertPitch();
+
+            water.FBO().BindReflection();
+    
+            let drawProperties = new DrawProperties();
+    
+            drawProperties.EnableClipping  = true;
+            drawProperties.FBO             = water.FBO().ReflectionFBO();
+    		drawProperties.ClipMax         = vec3.fromValues((position.x + scale.x), (position.y + scale.y), (position.z + scale.z));
+    		drawProperties.ClipMin         = vec3.fromValues((position.x - scale.x),  position.y,            (position.z - scale.z));
+
+            RenderEngine.clear(CLEAR_VALUE_COLOR, drawProperties);
+    
+            RenderEngine.drawSkybox(drawProperties);
+            RenderEngine.drawRenderables(drawProperties);
+            
+            water.FBO().UnbindReflection();
+    
+            RenderEngine.Camera.InvertPitch();
+            RenderEngine.Camera.MoveBy(vec3.fromValues(0.0, cameraDistance, 0.0));
+    
+            // WATER REFRACTION PASS - BELOW WATER
+            water.FBO().BindRefraction();
+    
+            drawProperties.ClipMax.y = position.y;
+            drawProperties.ClipMin.y = (position.y - scale.y);
+            drawProperties.FBO       = water.FBO().RefractionFBO();
+    
+            RenderEngine.clear(CLEAR_VALUE_COLOR, drawProperties);
+    
+            RenderEngine.drawSkybox(drawProperties);
+            RenderEngine.drawRenderables(drawProperties);
+    
+            water.FBO().UnbindRefraction();
+        }        
+    }
+
+    static Draw()
+    {
+        RenderEngine.createDepthFBO();
+        RenderEngine.createWaterFBOs();
+    
+        RenderEngine.clear(CLEAR_VALUE_DEFAULT, {});
+        RenderEngine.drawScene();
+    }
+
+    static drawBoundingVolumes()
     {
         if (!RenderEngine.DrawBoundingVolume)
-            return -1;
+            return 1;
 
         let gl = RenderEngine.GLContext();
 
-        gl.useProgram(ShaderManager.Programs[ShaderID.SOLID].Program());
+        let oldDrawMode       = RenderEngine.drawMode;
+        RenderEngine.drawMode = gl.LINE_STRIP;
 
-        let oldDrawMode       = RenderEngine.DrawMode;
-        RenderEngine.DrawMode = gl.LINE_STRIP;
+        let properties = new DrawProperties();
 
-        for (let mesh of RenderEngine.Renderables)
-            RenderEngine.DrawMesh(mesh.BoundingVolume(), ShaderID.SOLID);
+        properties.DrawBoundingVolume = true;
+        properties.Shader             = ShaderID.WIREFRAME;
 
-        RenderEngine.DrawMode = oldDrawMode;
+        RenderEngine.drawMeshes(RenderEngine.Renderables, properties);
 
-        gl.useProgram(null);
+        RenderEngine.drawMode = oldDrawMode;
 
         return 0;
     }    
@@ -103,46 +175,68 @@ class RenderEngine
     * @param {Array<number>} clipMax
     * @param {Array<number>} clipMin
     */
-    static DrawHUDs(enableClipping = false, clipMax = [0, 0, 0], clipMin = [0, 0, 0])
+    static drawHUDs()
     {
+        if (RenderEngine.HUDs.length === 0)
+            return 1;
+
         let gl = RenderEngine.GLContext();
 
         gl.disable(gl.DEPTH_TEST);
         gl.disable(gl.CULL_FACE);
         gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-        gl.useProgram(ShaderManager.Programs[ShaderID.HUD].Program());
-
-        for (let hud of RenderEngine.HUDs)
-            RenderEngine.DrawMesh(hud, ShaderID.HUD, enableClipping, clipMax, clipMin);
-
-        gl.useProgram(null);
+        let properties    = new DrawProperties();
+        properties.Shader = (RenderEngine.drawMode === gl.TRIANGLES ? ShaderID.HUD : ShaderID.WIREFRAME);
+    
+        RenderEngine.drawMeshes(RenderEngine.HUDs, properties);
     }
 
+    static drawLightSources()
+    {
+        if (RenderEngine.LightSources.length === 0)
+            return 1;
+    
+        let gl = RenderEngine.GLContext();
+
+        gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LESS);
+        gl.enable(gl.CULL_FACE);  gl.cullFace(gl.BACK); gl.frontFace(gl.CCW);
+        gl.disable(gl.BLEND);
+    
+        let properties    = new DrawProperties();
+        properties.Shader = (RenderEngine.drawMode === gl.TRIANGLES ? ShaderID.COLOR : ShaderID.WIREFRAME);
+    
+        RenderEngine.drawMeshes(RenderEngine.LightSources, properties);
+    
+        return 0;
+    }
+    
     /**
     * @param {boolean}       enableClipping
     * @param {Array<number>} clipMax
     * @param {Array<number>} clipMin
+    * @param {DrawProperties} properties
     */
-    static DrawRenderables(enableClipping = false, clipMax = [0, 0, 0], clipMin = [0, 0, 0])
+    static drawRenderables(properties)
     {
+        if (RenderEngine.Renderables.length === 0)
+            return 1;
+    
         let gl = RenderEngine.GLContext();
 
         gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LESS);
         gl.enable(gl.CULL_FACE);  gl.cullFace(gl.BACK); gl.frontFace(gl.CCW);
         gl.disable(gl.BLEND);
 
-        gl.useProgram(ShaderManager.Programs[ShaderID.DEFAULT].Program());
+        if (properties.Shader === ShaderID.UNKNOWN)
+            properties.Shader = (RenderEngine.drawMode == gl.TRIANGLES ? ShaderID.DEFAULT : ShaderID.WIREFRAME);
 
-        for (let mesh of RenderEngine.Renderables) {
-            if (!mesh.IsSelected())
-                RenderEngine.DrawMesh(mesh, ShaderID.DEFAULT, enableClipping, clipMax, clipMin);
-        }
+        RenderEngine.drawMeshes(RenderEngine.Renderables, properties);
 
-        gl.useProgram(null);
+        properties.Shader = ShaderID.UNKNOWN;
     }    
 
-    static DrawSelected()
+    static drawSelected()
     {
         let gl = RenderEngine.GLContext();
 
@@ -150,142 +244,145 @@ class RenderEngine
         gl.enable(gl.CULL_FACE);  gl.cullFace(gl.BACK); gl.frontFace(gl.CCW);
         gl.disable(gl.BLEND);
 
-        gl.useProgram(ShaderManager.Programs[ShaderID.SOLID].Program());
+        let oldDrawMode       = RenderEngine.drawMode;
+        RenderEngine.drawMode = gl.LINE_STRIP;
 
-        let oldDrawMode       = RenderEngine.DrawMode;
-        RenderEngine.DrawMode = gl.LINE_STRIP;
+        let properties = new DrawProperties();
 
-        for (let mesh of RenderEngine.Renderables)
-        {
-            if (!mesh.IsSelected())
-                continue;
+        properties.DrawSelected = true;
+        properties.Shader       = ShaderID.WIREFRAME;
+    
+        RenderEngine.drawMeshes(RenderEngine.Renderables, properties);
 
-            let oldColor = mesh.Color();
-
-            mesh.SetColor(vec4.fromValues(1.0, 0.5, 0.0, 1.0));
-            RenderEngine.DrawMesh(mesh, ShaderID.SOLID);
-
-            mesh.SetColor(oldColor);
-        }
-
-        RenderEngine.DrawMode = oldDrawMode;
-
-        gl.useProgram(null);
+        RenderEngine.drawMode = oldDrawMode;
     }
 
     /**
     * @param {boolean}       enableClipping
     * @param {Array<number>} clipMax
     * @param {Array<number>} clipMin
+    * @param {DrawProperties} properties
     */
-    static DrawSkybox(enableClipping = false, clipMax = [0, 0, 0], clipMin = [0, 0, 0])
+    static drawSkybox(properties)
     {
+        if (!RenderEngine.Skybox)
+            return 1;
+
         let gl = RenderEngine.GLContext();
 
 		gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
 		gl.disable(gl.CULL_FACE);
 		gl.disable(gl.BLEND);
 
-        gl.useProgram(ShaderManager.Programs[ShaderID.SKYBOX].Program());
+        if (properties.Shader === ShaderID.UNKNOWN)
+            properties.Shader = (RenderEngine.drawMode === gl.TRIANGLES ? ShaderID.SKYBOX : ShaderID.WIREFRAME);
 
-        if (RenderEngine.Skybox)
-            RenderEngine.DrawMesh(RenderEngine.Skybox, ShaderID.SKYBOX, enableClipping, clipMax, clipMin);
+        RenderEngine.drawMeshes([ RenderEngine.Skybox ], properties);
 
-        gl.useProgram(null);
-    }    
-
-    /**
-    * @param {boolean}       enableClipping
-    * @param {Array<number>} clipMax
-    * @param {Array<number>} clipMin
-    */
-    static DrawTerrains(enableClipping = false, clipMax = [0, 0, 0], clipMin = [0, 0, 0])
-    {
-        let gl = RenderEngine.GLContext();
-
-        gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LESS);
-        gl.enable(gl.CULL_FACE);  gl.cullFace(gl.BACK); gl.frontFace(gl.CCW);
-        gl.disable(gl.BLEND);
-
-        gl.useProgram(ShaderManager.Programs[ShaderID.TERRAIN].Program());
-
-        for (let terrain of RenderEngine.Terrains)
-            RenderEngine.DrawMesh(terrain, ShaderID.TERRAIN, enableClipping, clipMax, clipMin);
-
-        gl.useProgram(null);
-    }    
-
-    /**
-    * @param {boolean}       enableClipping
-    * @param {Array<number>} clipMax
-    * @param {Array<number>} clipMin
-    */
-    static DrawWaters(enableClipping = false, clipMax = [0, 0, 0], clipMin = [0, 0, 0])
-    {
-        let gl = RenderEngine.GLContext();
-
-        gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LESS);
-        gl.enable(gl.CULL_FACE);  gl.cullFace(gl.BACK); gl.frontFace(gl.CCW);
-        gl.disable(gl.BLEND);
-
-        gl.useProgram(ShaderManager.Programs[ShaderID.WATER].Program());
-
-        for (let water of RenderEngine.Waters)
-            RenderEngine.DrawMesh(water, ShaderID.WATER, enableClipping, clipMax, clipMin);
-
-        gl.useProgram(null);
+        properties.Shader = ShaderID.UNKNOWN;
     }    
     
-    /**
-    * @param {boolean}       enableClipping
-    * @param {Array<number>} clipMax
-    * @param {Array<number>} clipMin
-    */
-    static DrawScene(enableClipping = false, clipMax = [0, 0, 0], clipMin = [0, 0, 0])
-    {
-        RenderEngine.DrawSkybox(enableClipping,      clipMax, clipMin);
-        RenderEngine.DrawTerrains(enableClipping,    clipMax, clipMin);
-        RenderEngine.DrawWaters(enableClipping,      clipMax, clipMin);
-        RenderEngine.DrawRenderables(enableClipping, clipMax, clipMin);
-        RenderEngine.DrawHUDs(enableClipping,        clipMax, clipMin);
-    }
-
     /**
     * @param {Mesh}          mesh
     * @param {ShaderID}      shaderID
     * @param {boolean}       enableClipping
     * @param {Array<number>} clipMax
     * @param {Array<number>} clipMin
+    * @param {Component}      mesh
+    * @param {ShaderProgram}  shaderProgram
+    * @param {DrawProperties} properties
     */
-    static DrawMesh(mesh, shaderID, enableClipping = false, clipMax = [0, 0, 0], clipMin = [0, 0, 0])
+    static drawMesh(mesh, shaderProgram, properties)
     {
-        let shaderProgram = ShaderManager.Programs[shaderID];
-
-        if (!RenderEngine.Camera || !shaderProgram || !mesh || !mesh.IBO())
+        if (!RenderEngine.Camera || !shaderProgram || !mesh)
             return -1;
 
         let gl = RenderEngine.GLContext();
 
         // SHADER ATTRIBUTES AND UNIFORMS
         shaderProgram.UpdateAttribs(mesh);
-        shaderProgram.UpdateUniforms(mesh, enableClipping, clipMax, clipMin);
+        shaderProgram.UpdateUniforms(mesh, properties);
         
         // DRAW
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.IBO());
-        gl.drawElements(RenderEngine.DrawMode, mesh.NrOfIndices(), gl.UNSIGNED_INT, 0);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        if (mesh.IBO()) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.IBO());
+            gl.drawElements(RenderEngine.drawMode, mesh.NrOfIndices(), gl.UNSIGNED_INT, 0);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        } else {
+            gl.bindBuffer(gl.VERTEX_ARRAY, mesh.VBO());
+            gl.drawArrays(RenderEngine.drawMode, 0, mesh.NrOfVertices());
+            gl.bindBuffer(gl.VERTEX_ARRAY, null);
+        }
 
         // UNBIND TEXTURES
-        for (let i = 0; i < Utils.MAX_TEXTURES; i++)
+        for (let i = 0; i < MAX_TEXTURES; i++)
         {
             gl.activeTexture(gl.TEXTURE0 + i);
             gl.bindTexture(gl.TEXTURE_2D,       null);
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
         }
 
+        gl.activeTexture(gl.TEXTURE6);
+        gl.bindTexture(gl.TEXTURE_2D_ARRAY, null);
+    
         gl.activeTexture(gl.TEXTURE0);
 
         return 0;
+    }
+
+    /**
+    * @param {Array<Component>} meshes 
+    * @param {DrawProperties}   properties 
+    */ 
+    static drawMeshes(meshes, properties)
+    {
+        let gl            = RenderEngine.GLContext();
+        let shaderProgram = ShaderManager.Programs[properties.Shader];
+
+        gl.useProgram(shaderProgram.Program());
+
+        for (let mesh of meshes)
+        {
+            if (!properties.DrawBoundingVolume &&
+                ((properties.DrawSelected && !mesh.IsSelected()) ||
+                (!properties.DrawSelected && mesh.IsSelected())))
+            {
+                continue;
+            }
+
+            // SKIP RENDERING WATER WHEN CREATING FBO
+            if ((mesh.Type() === ComponentType.WATER) && properties.FBO && (properties.FBO.Type() !== FBOType.UNKNOWN))
+                continue;
+
+            let oldColor = mesh.ComponentMaterial.diffuse;
+
+            if (properties.DrawSelected)
+                mesh.ComponentMaterial.diffuse = Utils.SelectColor;
+
+            RenderEngine.drawMesh(
+                (properties.DrawBoundingVolume ? mesh.BoundingVolume() : mesh), shaderProgram, properties
+            );
+
+            if (properties.DrawSelected)
+                mesh.ComponentMaterial.diffuse = oldColor;
+        }
+
+        gl.useProgram(null);
+    }
+
+    /**
+    * @param {boolean}       enableClipping
+    * @param {Array<number>} clipMax
+    * @param {Array<number>} clipMin
+    */
+    static drawScene()
+    {
+       RenderEngine.drawRenderables(new DrawProperties());
+       RenderEngine.drawLightSources(new DrawProperties());
+       RenderEngine.drawSelected(new DrawProperties());
+       RenderEngine.drawBoundingVolumes(new DrawProperties());
+       RenderEngine.drawSkybox(new DrawProperties());
+       RenderEngine.drawHUDs(new DrawProperties());
     }
 
     /**
@@ -297,9 +394,6 @@ class RenderEngine
         return RenderEngine.Canvas().getContext("webgl2", { antialias: true });
     }
     
-    /**
-     * 
-     */
     static GPU()
     {
         let gl    = RenderEngine.GLContext();
@@ -311,13 +405,10 @@ class RenderEngine
         return gl.getParameter(glExt.UNMASKED_RENDERER_WEBGL);
     }
 
-    /**
-     * 
-     */
     static Init()
     {
         let gl = RenderEngine.GLContext();
-
+        
         if (!gl) {
             alert("Your browser does not support WebGL 2 (OpenGL ES 3.0).");
             return -1;
@@ -336,27 +427,21 @@ class RenderEngine
     {
         let index;
 
-        switch (mesh.Parent.Name) {
-        case "HUD":
+        switch (mesh.Parent.Type()) {
+        case ComponentType.HUD:
             index = RenderEngine.HUDs.indexOf(mesh);
 
             if (index >= 0)
                 RenderEngine.HUDs.splice(index, 1);
             break;
-        case "Skybox":
+        case ComponentType.SKYBOX:
             RenderEngine.Skybox = null;
             break;
-        case "Terrain":
-            index = RenderEngine.Terrains.indexOf(mesh);
+        case ComponentType.LIGHTSOURCE:
+            index = RenderEngine.LightSources.indexOf(mesh);
 
             if (index >= 0)
-                RenderEngine.Terrains.splice(index, 1);
-            break;
-        case "Water":
-            index = RenderEngine.Waters.indexOf(mesh);
-
-            if (index >= 0)
-                RenderEngine.Waters.splice(index, 1);
+                RenderEngine.LightSources.splice(index, 1);
             break;
         default:
             index = RenderEngine.Renderables.indexOf(mesh);
@@ -404,10 +489,10 @@ class RenderEngine
 
         switch (mode) {
         case "Filled":
-            RenderEngine.DrawMode = gl.TRIANGLES;
+            RenderEngine.drawMode = gl.TRIANGLES;
             break;
         case "Wireframe":
-            RenderEngine.DrawMode = gl.LINE_STRIP;
+            RenderEngine.drawMode = gl.LINE_STRIP;
             break;
         default:
             break;
@@ -423,13 +508,13 @@ class RenderEngine
 // TRIANGLES	  0x0004	
 // TRIANGLE_STRIP 0x0005
 // TRIANGLE_FAN   0x0006
-RenderEngine.DrawMode = 0x0004;
+RenderEngine.drawMode = 0x0004;
 
 RenderEngine.AspectRatio        = 0.5625;
 RenderEngine.Camera             = null;
 RenderEngine.DrawBoundingVolume = false;
 RenderEngine.HUDs               = [];
+RenderEngine.LightSources       = [];
 RenderEngine.Renderables        = [];
 RenderEngine.Skybox             = null;
-RenderEngine.Terrains           = [];
-RenderEngine.Waters             = [];
+RenderEngine.EnableSRGB         = true;

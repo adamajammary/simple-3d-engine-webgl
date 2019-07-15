@@ -1,28 +1,28 @@
-attribute vec3 VertexNormal;
-attribute vec3 VertexPosition;
-attribute vec2 VertexTextureCoords;
+#version 300 es
 
-varying vec3 FragmentNormal;
-varying vec4 FragmentPosition;
-varying vec2 FragmentTextureCoords;
+const int MAX_TEXTURES = 6;
 
-uniform mat4 MatrixModel;
-uniform mat4 MatrixView;
-uniform mat4 MatrixProjection;
-uniform mat4 MatrixMVP;
+in vec3 VertexNormal;
+in vec3 VertexPosition;
+in vec2 VertexTextureCoords;
+
+out vec3 FragmentNormal;
+out vec4 FragmentPosition;
+out vec2 FragmentTextureCoords;
+out vec4 ClipSpace;
+
+uniform mat3 Normal;
+uniform mat4 Model;
+uniform mat4 VP[MAX_TEXTURES];
+uniform mat4 MVP;
 
 void main()
 {
-    /*vec4 worldPosition = (matrixModel * vec4(vertexPosition, 1.0));
-
-    fragmentNormal        = (matrixModel * vec4(vertexNormal, 0.0)).xyz;
-    fragmentPosition      = worldPosition;
-    fragmentTextureCoords = vertexTextureCoords;
-
-    gl_Position = (matrixProjection * matrixView * worldPosition);*/
-
-    FragmentNormal        = (MatrixModel * vec4(VertexNormal, 0.0)).xyz;
-    FragmentTextureCoords = VertexTextureCoords;
-    FragmentPosition      = (MatrixModel * vec4(VertexPosition, 1.0));
-    gl_Position           = (MatrixMVP   * vec4(VertexPosition, 1.0));
+	//FragmentNormal = vec3(Model * vec4(VertexNormal, 0.0));
+	//FragmentNormal = vec3(transpose(inverse(mat3(Model))) * VertexNormal);
+	FragmentNormal        = (Normal * VertexNormal);
+	FragmentPosition      = (Model * vec4(VertexPosition, 1.0));
+	FragmentTextureCoords = VertexTextureCoords;
+	ClipSpace             = (MVP * vec4(VertexPosition, 1.0));
+	gl_Position           = ClipSpace;
 }

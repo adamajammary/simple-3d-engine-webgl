@@ -1,3 +1,5 @@
+#version 300 es
+
 #ifdef GL_FRAGMENT_PRECISION_HIGH
 	precision highp float;
 #else
@@ -6,30 +8,21 @@
 
 const int MAX_TEXTURES = 6;
 
-//varying vec3 fragmentNormal;
-//varying vec4 fragmentPosition;
-varying vec2 FragmentTextureCoords;
+in vec2 FragmentTextureCoords;
 
-uniform vec4      MaterialColor;
-uniform bool      IsTransparent;
+out vec4 GL_FragColor;
+
+uniform vec4 MaterialColor;
+uniform vec4 IsTransparent;
+
 uniform sampler2D Textures[MAX_TEXTURES];
-//uniform bool      isTextured;
-//uniform vec2      textureScales[MAX_TEXTURES];	// tx = [ [x, y], [x, y], ... ];
 
 void main()
 {
-	/*vec4 sampledColor = texture2D(textures[5], fragmentTextureCoords);
+	vec4 sampledColor = texture(Textures[5], FragmentTextureCoords);
 
-	if (isTransparent) {
-		gl_FragColor = sampledColor;
-	} else {
-		gl_FragColor = vec4(sampledColor.rgb, materialColor.a);
-	}*/
-
-	vec4 sampledColor = texture2D(Textures[5], FragmentTextureCoords);
-
-	if (IsTransparent)
-		gl_FragColor = sampledColor;
+	if (IsTransparent.x > 0.1)
+		GL_FragColor = sampledColor;
 	else
-		gl_FragColor = vec4(sampledColor.rgb, MaterialColor.a);	
+		GL_FragColor = vec4(sampledColor.rgb, MaterialColor.a);
 }

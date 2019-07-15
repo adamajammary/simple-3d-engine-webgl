@@ -6,8 +6,6 @@ in vec3 VertexNormal;
 in vec3 VertexPosition;
 in vec2 VertexTextureCoords;
 
-out vec3 FragmentTextureCoords;
-
 uniform mat4 Normal;
 uniform mat4 Model;
 uniform mat4 VP[MAX_TEXTURES];
@@ -15,6 +13,5 @@ uniform mat4 MVP;
 
 void main()
 {
-	FragmentTextureCoords = VertexPosition;
-    gl_Position           = vec4(MVP * vec4(VertexPosition, 1.0)).xyww;
+	gl_Position = (MVP * vec4(VertexPosition, 1.0));
 }

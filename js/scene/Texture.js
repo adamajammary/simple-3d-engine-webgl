@@ -5,25 +5,18 @@
 class Texture
 {
     /**
-    * @param {object}        image      // Cubemap: {Array<object>} image
-    * @param {string}        file
-    * @param {boolean}       cubeMap
-    * @param {boolean}       repeat
-    * @param {boolean}       flipY
-    * @param {Array<number>} scale
-    * @param {boolean}       depth
-    * @param {boolean}       color
+    * @param {Array<object>} images Array<{ file:string, name:string, result:HTMLImageElement }>
+    * @param {TextureType}   textureType
+    * @param {FBOType}       fboType
     * @param {number}        width
     * @param {number}        height
+    * @param {boolean}       repeat
+    * @param {boolean}       flipY
+    * @param {boolean}       transparent
+    * @param {Array<number>} scale
     */
-    constructor(image, file, cubeMap = false, repeat = false, flipY = false, scale = [ 1.0, 1.0 ], depth = false, color = false, width = 100, height = 100)
+    constructor(images, textureType = TextureType.TEX_2D, fboType = FBOType.UNKNOWN, width = 0, height = 0, repeat = false, flipY = false, transparent = false, scale = [ 1.0, 1.0 ])
     {
-        let gl   = RenderEngine.GLContext();
-        let id   = null;
-        let type = null;
-
-        init();
-
         function init()
         {
             id = gl.createTexture();
@@ -33,88 +26,149 @@ class Texture
                 return -1;
             }
 
-            type = (cubeMap ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D);
-
-            gl.bindTexture(type, id);
+            gl.bindTexture(glType, id);
             gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, flipY);
 
-            if (cubeMap) {
-                gl.texParameteri(type, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(type, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(type, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
-            } else if (repeat) {
-                gl.texParameteri(type, gl.TEXTURE_WRAP_S, gl.REPEAT);
-                gl.texParameteri(type, gl.TEXTURE_WRAP_T, gl.REPEAT);
-            } else {
-                gl.texParameteri(type, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(type, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            }
+            switch (glType) {
+            case gl.TEXTURE_2D:
+                switch (fboType) {
+                case FBOType.UNKNOWN:
+                    //mipLevels = (Math.floor(Math.log2(Math.max(width, height))) + 1);
 
-            // 2D TEXTURE FROM IMAGE
-            if (!cubeMap && image)
-            {
-                gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-                gl.texParameteri(type, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
-                gl.texParameteri(type, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-                gl.texImage2D(type, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-                gl.generateMipmap(type);
-                gl.disable(gl.BLEND);
-            }
-            // CUBE MAP FROM 6 IMAGES
-            else if (cubeMap && image && (image.length == Utils.MAX_TEXTURES))
-            {
-                for (var i = 0; i < Utils.MAX_TEXTURES; i++)
-                {
-                    // TEXTURE_CUBE_MAP_POSITIVE_X 0x8515   // RIGHT
-                    // TEXTURE_CUBE_MAP_NEGATIVE_X 0x8516   // LEFT
-                    // TEXTURE_CUBE_MAP_POSITIVE_Y 0x8517   // TOP
-                    // TEXTURE_CUBE_MAP_NEGATIVE_Y 0x8518   // BOTTOM
-                    // TEXTURE_CUBE_MAP_POSITIVE_Z 0x8519   // BACK  ???
-                    // TEXTURE_CUBE_MAP_NEGATIVE_Z 0x851A   // FRONT ???
-                    gl.texImage2D(
-                        (gl.TEXTURE_CUBE_MAP_POSITIVE_X + i), 0,
-                        gl.RGBA, image[i].width, image[i].height, 0,
-                        gl.RGBA, gl.UNSIGNED_BYTE, image[i]
-                    );
+                    gl.texParameteri(glType, gl.TEXTURE_WRAP_S, (repeat && !transparent ? gl.REPEAT : gl.CLAMP_TO_EDGE));
+                    gl.texParameteri(glType, gl.TEXTURE_WRAP_T, (repeat && !transparent ? gl.REPEAT : gl.CLAMP_TO_EDGE));
+
+                    gl.texParameteri(glType, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+                    gl.texParameteri(glType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+                    if (transparent)
+                        gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+                    
+                    gl.texImage2D(glType, 0, gl.SRGB8_ALPHA8, gl.RGBA, gl.UNSIGNED_BYTE, images[0].result);
+                    //gl.texImage2D(glType, 0, gl.SRGB8_ALPHA8, images[0].result.width, images[0].result.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, images[0].result);
+                    gl.generateMipmap(glType);
+
+                    if (transparent)
+                        gl.disable(gl.BLEND);
+                    
+                    break;
+                case FBOType.COLOR:
+                    gl.texParameteri(glType, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(glType, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+                    gl.texParameteri(glType, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                    gl.texParameteri(glType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+                    gl.texStorage2D(glType, 1, gl.SRGB8_ALPHA8, width, height);
+                    //gl.texImage2D(glType, 0, gl.SRGB8_ALPHA8, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+                    /*gl.texParameteri(glType, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                    gl.texParameteri(glType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                    gl.texImage2D(glType, 0, gl.RGB, width, height, 0, gl.RGB, gl.UNSIGNED_BYTE, null);
+                    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, glType, id, 0);*/
+    
+                    break;
+                case FBOType.DEPTH:
+                    gl.texParameteri(glType, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(glType, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+                    gl.texParameteri(glType, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                    gl.texParameteri(glType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+                    gl.texStorage2D(glType, 1, gl.DEPTH_COMPONENT16, width, height);
+
+                    /*gl.texParameteri(glType, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                    gl.texParameteri(glType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                    gl.texImage2D(glType, 0, gl.DEPTH_COMPONENT32F, width, height, 0, gl.DEPTH_COMPONENT, gl.FLOAT, null);
+                    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, glType, id, 0);*/
+
+                    break;
+                default:
+                    break;
                 }
+                break;
+            case gl.TEXTURE_CUBE_MAP:
+                switch (fboType) {
+                case FBOType.UNKNOWN:
+                    gl.texParameteri(glType, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(glType, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(glType, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
 
-                gl.texParameteri(type, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-                gl.texParameteri(type, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            }
-            // DEPTH
-            else if (depth)
-            {
-                gl.texParameteri(type, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-                gl.texParameteri(type, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-                gl.texImage2D(type, 0, gl.DEPTH_COMPONENT32F, width, height, 0, gl.DEPTH_COMPONENT, gl.FLOAT, null);
-                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, type, id, 0);
-            }
-            // COLOR
-            else if (color)
-            {
-                gl.texParameteri(type, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-                gl.texParameteri(type, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-                gl.texImage2D(type, 0, gl.RGB, width, height, 0, gl.RGB, gl.UNSIGNED_BYTE, null);
-                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, type, id, 0);
-            }
-            else
-            {
-                alert("ERROR: The texture image is invalid.");
-                id   = null;
-                file = "";
+                    gl.texParameteri(glType, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                    gl.texParameteri(glType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+                    for (let i = 0; i < MAX_TEXTURES; i++)
+                    {
+                        gl.texImage2D(
+                            (gl.TEXTURE_CUBE_MAP_POSITIVE_X + i), 0, gl.SRGB8_ALPHA8,
+                            images[i].result.width, images[i].result.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, images[i].result
+                        );
+                    }
+                    
+                    break;
+                case FBOType.COLOR:
+                    break;
+                case FBOType.DEPTH:
+                    gl.texParameteri(glType, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(glType, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(glType, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+
+                    gl.texParameteri(glType, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                    gl.texParameteri(glType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+                    for (let i = 0; i < MAX_TEXTURES; i++)
+                        glTexStorage2D((gl.TEXTURE_CUBE_MAP_POSITIVE_X + i), 1, gl.DEPTH_COMPONENT16, images[i].result.width, images[i].result.height);
+
+                    break;
+                default:
+                    break;
+                }
+                break;
+            case gl.TEXTURE_2D_ARRAY:
+                gl.texParameteri(glType, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER);
+                gl.texParameteri(glType, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_BORDER);
+
+                gl.texParameteri(glType, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                gl.texParameteri(glType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+                // SET BORDER VALUES FOR CLAMP WRAPPING
+                gl.texParameterfv(glType, gl.TEXTURE_BORDER_COLOR, [ 1.0, 1.0, 1.0, 1.0 ]);
+
+                gl.texStorage3D(glType, 1, gl.DEPTH_COMPONENT16, width, height, MAX_LIGHT_SOURCES);
+
+                break;
+            case gl.TEXTURE_CUBE_MAP_ARRAY:
+                gl.texParameteri(glType, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(glType, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(glType, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+
+                gl.texParameteri(glType, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                gl.texParameteri(glType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+                gl.texStorage3D(glType, 1, gl.DEPTH_COMPONENT16, width, height, (MAX_LIGHT_SOURCES * MAX_TEXTURES));
+
+                break;
+            default:
+                break;
             }
 
-            gl.bindTexture(type, null);
+            gl.bindTexture(glType, null);
 
             return 0;
         }
         
         /**
+        * @param  {number} index
         * @return {string}
         */
-        this.File = function()
+        this.File = function(index = 0)
         {
-            return file;
+            if ((images.length == 1) && (images[0].name !== "emptyTexture"))
+                return images[0].name;
+            else if ((images.length > 1) && (index < images.length) && (images[index].name !== "emptyTexture"))
+                return images[index].name;
+
+            return "";
         }
 
         /**
@@ -135,20 +189,30 @@ class Texture
 
         /**
         * 2D Texture source
+        * @param  {number} index
         * @return {string}
         */
-        this.ImageSource = function()
+        this.ImageSource = function(index = 0)
         {
-            return (image ? image.src : "");
+            if (images.length == 0)
+                return null;
+
+            return (images.length > 1 ? images[index].result.src : images[0].result.src);
         }
 
         /**
         * 2D Texture image
+        * @param  {number} index
         * @return {object}
         */
-        this.Image = function()
+        this.Image = function(index = 0)
         {
-            return (image ? image : null);
+            if ((images.length == 1) && (images[0].name !== "emptyTexture"))
+                return images[0].result;
+            else if ((images.length > 1) && (index < images.length) && (images[index].name !== "emptyTexture"))
+                return images[index].result;
+
+            return null;
         }
 
         /**
@@ -177,12 +241,18 @@ class Texture
             }
         }
 
+        /**
+        * @param {boolean} newFlipY
+        */
         this.SetFlipY = function(newFlipY)
         {
             flipY = newFlipY;
             init();
         }
 
+        /**
+        * @param {boolean} newRepeat
+        */
         this.SetRepeat = function(newRepeat)
         {
             repeat = newRepeat;
@@ -190,11 +260,46 @@ class Texture
         }
 
         /**
-        * @return {number}
+        * @param {boolean} newTransparent
+        */
+        this.SetTransparent = function(newTransparent)
+        {
+            transparent = newTransparent;
+            init();
+        }
+        
+        /**
+        * @return {boolean}
+        */
+        this.Transparent = function()
+        {
+            return transparent;
+        }
+        
+        /**
+        * @return {TextureType}
         */
         this.Type = function()
         {
-            return type;
+            return textureType;
         }
+
+        /**
+        * @return {number}
+        */
+        this.TypeGL = function()
+        {
+            return glType;
+        }
+
+        /**
+        * MAIN
+        */
+        let gl     = RenderEngine.GLContext();
+        let id     = null;
+        let glType = Utils.ToGlTextureType(textureType);
+        //let mipLevels = 1;
+
+        init();
     }
 }

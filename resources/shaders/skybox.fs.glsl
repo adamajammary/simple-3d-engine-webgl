@@ -1,3 +1,5 @@
+#version 300 es
+
 #ifdef GL_FRAGMENT_PRECISION_HIGH
 	precision highp float;
 #else
@@ -6,15 +8,24 @@
 
 const int MAX_TEXTURES = 6;
 
-//varying vec3 fragmentNormal;
-//varying vec4 fragmentPosition;
-varying vec3 FragmentTextureCoords;
-
+in      vec3        FragmentTextureCoords;
+out     vec4        GL_FragColor;
+uniform vec4        EnableSRGB;
 uniform samplerCube Textures[MAX_TEXTURES];
-//uniform vec2        textureScales[MAX_TEXTURES];	// tx = [ [x, y], [x, y], ... ];
+
+// sRGB GAMMA CORRECTION
+vec3 GetFragColorSRGB(vec3 colorRGB)
+{
+	if (EnableSRGB.x > 0.1) {
+		float sRGB = (1.0 / 2.2);
+		colorRGB.rgb = pow(colorRGB.rgb, vec3(sRGB, sRGB, sRGB));
+	}
+
+	return colorRGB;
+}
 
 void main()
 {
-	/*gl_FragColor = textureCube(textures[0], fragmentTextureCoords);*/
-	gl_FragColor = textureCube(Textures[0], FragmentTextureCoords);
+	GL_FragColor     = texture(Textures[0], FragmentTextureCoords);
+	GL_FragColor.rgb = GetFragColorSRGB(GL_FragColor.rgb);
 }

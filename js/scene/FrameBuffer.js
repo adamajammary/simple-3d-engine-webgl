@@ -5,65 +5,41 @@
 class FrameBuffer
 {
     /**
-    * @param {number} width
-    * @param {number} height
+    * @param {number}      width
+    * @param {number}      height
+    * @param {FBOType}     fboType
+    * @param {TextureType} textureType
     */
-    constructor(width, height)
+    constructor(width, height, fboType, textureType)
     {
-        let colorTexture = null;
-        let depthTexture = null;
-        let gl           = RenderEngine.GLContext();
-        let id           = null;
-        let renderBuffer = null;
-
         /**
-        * @param  {number} format
-        * @param  {number} attachment
-        * @return {object}
-        */       
-        this.AttachRenderBuffer = function(format, attachment)
+        * @param {number} depthLayer
+        */
+        this.Bind = function(depthLayer = 0)
         {
-            this.Bind();
+            gl.bindTexture(gl.TEXTURE_2D,       null);
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+            gl.bindTexture(gl.TEXTURE_2D_ARRAY, null);
+            //gl.bindTexture(gl.TEXTURE_CUBE_MAP_ARRAY, null);
 
-            renderBuffer = gl.createRenderbuffer();
-
-            gl.bindRenderbuffer(gl.RENDERBUFFER, renderBuffer);
-            gl.renderbufferStorage(gl.RENDERBUFFER, format, width, height);
-            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, attachment, gl.RENDERBUFFER, renderBuffer);
-            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-
-            this.Unbind();
-        }
-
-        this.Bind = function()
-        {
-            gl.bindTexture(gl.TEXTURE_2D, null);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, id);
             gl.viewport(0, 0, width, height);
-        }
 
-        this.ColorTexture = function()
-        {
-            return colorTexture;
-        }
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
 
-        this.CreateColorTexture = function()
-        {
-            this.Bind();
-            colorTexture = new Texture(null, "framebuffer_color_texture", false, true, false, [ 1.0, 1.0 ], false, true, width, height);
-            this.Unbind();
+            if (textureType === TextureType.TEX_2D_ARRAY)
+    			gl.framebufferTextureLayer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, texture.ID(), 0, depthLayer);
         }
-
-        this.CreateDepthTexture = function()
+        
+        this.Unbind = function()
         {
-            this.Bind();
-            depthTexture = new Texture(null, "framebuffer_depth_texture", false, true, false, [ 1.0, 1.0 ], true, false, width, height);
-            this.Unbind();
-        }
+            gl.bindTexture(gl.TEXTURE_2D,       null);
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+            gl.bindTexture(gl.TEXTURE_2D_ARRAY, null);
+            //gl.bindTexture(gl.TEXTURE_CUBE_MAP_ARRAY, null);
 
-        this.DepthTexture = function()
-        {
-            return depthTexture;
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+            gl.viewport(0, 0, RenderEngine.Canvas().width, RenderEngine.Canvas().height);
         }
 
         /**
@@ -77,15 +53,14 @@ class FrameBuffer
         /**
         * @return {object}
         */
-        this.ID = function()
+        this.FBO = function()
         {
-            return id;
+            return fbo;
         }
-       
-        this.Unbind = function()
+
+        this.Texture = function()
         {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            gl.viewport(0, 0, RenderEngine.Canvas().width, RenderEngine.Canvas().height);
+            return texture;
         }
 
         /**
@@ -97,17 +72,44 @@ class FrameBuffer
         }
 
         /**
-         * MAIN
-         */
-        id = gl.createFramebuffer();
-            
-        if (id) {
-            this.Bind();
-            gl.drawBuffers([ gl.COLOR_ATTACHMENT0 ]);
-            this.Unbind();
+        * MAIN
+        */
+        let gl      = RenderEngine.GLContext();
+        let fbo     = gl.createFramebuffer();
+        let texture = null;
+        
+        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE)
+            alert("ERROR! Failed to create the frame buffer");
+
+        if (fbo)
+        {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+
+            switch (fboType) {
+            case FBOType.COLOR:
+                texture = new Texture([], textureType, fboType, width, height);
+    
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, texture.TypeGL(), texture.ID(), 0);
+                gl.drawBuffers([ gl.COLOR_ATTACHMENT0 ]);
+
+                break;
+            case FBOType.DEPTH:
+                //depthTexture = new Texture(null, "framebuffer_depth_texture", false, true, false, [ 1.0, 1.0 ], true, false, width, height);
+                texture = new Texture([], textureType, fboType, width, height);
+
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, texture.TypeGL(), texture.ID(), 0);
+
+                gl.drawBuffers(gl.NONE);
+                gl.readBuffer(gl.NONE);
+
+                break;
+            default:
+                break;
+            }
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         } else {
             alert("ERROR: Failed to create the frame buffer.");
         }
-
     }
 }
