@@ -23,11 +23,14 @@ class PhysicsEngine
     			continue;
 
             switch (mesh.BoundingVolumeType()) {
-            case "box":
+            case BoundingVolumeType.BOX_AABB:
                 mesh.Select(ray.RayIntersectAABB(volume.MinBoundaries(), volume.MaxBoundaries()));
                 break;
-            case "sphere":
-                mesh.Select(ray.RayIntersectSphere(volume.MinBoundaries(), volume.MaxBoundaries()));
+            case BoundingVolumeType.BOX_OBB:
+                mesh.Select(ray.RayIntersectOBB());
+                break;
+            case BoundingVolumeType.SPHERE:
+                mesh.Select(ray.RayIntersectSphere());
                 break;
             }
         }
@@ -45,7 +48,7 @@ class PhysicsEngine
 
             for (let mesh of model.Children) {
                 if (mesh && mesh.AutoRotate)
-                    mesh.Rotate(mesh.AutoRotation());
+                    mesh.RotateBy(mesh.AutoRotation());
             }
         }
     }    

@@ -126,19 +126,6 @@ class LightSource extends Component
         }
 
         /**
-        * @param {Array<number>} amount
-        */
-        this.MoveBy = function(amount)
-        {
-            vec3.add(this.light.position, this.light.position, amount);
-
-            if (this.Children.length > 0)
-                this.Children[0].MoveBy(amount);
-
-            this.updateView();
-        }
-
-        /**
         * @param {Array<number>} newPosition
         */
         this.MoveTo = function(newPosition)
@@ -248,7 +235,6 @@ class LightSource extends Component
         this.SetDirection = function(direction)
         {
             this.light.direction = direction;
-
             this.updateView();
         }
 

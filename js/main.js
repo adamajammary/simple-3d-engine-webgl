@@ -9,7 +9,7 @@ app.controller("mainController", function($controller, $http, $rootScope, $scope
 {
     $scope.appName           = "Simple 3D Engine (WebGL)";
     $scope.appVersion        = "1.0.2";
-    $scope.boundingVolumes   = [ "none", "box", "sphere" ];
+    $scope.boundingVolumes   = [ "None", "Box (AABB)", "Box (OBB)", "Sphere" ];
     $scope.components        = [];
     $scope.controller        = $controller;
     $scope.copyright         = "\u00A9 2017 Adam A. Jammary";
@@ -211,6 +211,22 @@ app.controller("mainController", function($controller, $http, $rootScope, $scope
         return -2;
     }
     
+    /**
+    * @return {boolean}
+    */
+    $scope.drawBoundingVolumesGet = function()
+    {
+        return RenderEngine.DrawBoundingVolume;
+    }
+    
+    /**
+    * @param {boolean} enable
+    */
+    $scope.drawBoundingVolumesSet = function(enable)
+    {
+        RenderEngine.DrawBoundingVolume = enable;
+    }
+
     $scope.clearScene = function()
     {
         RenderEngine.Camera      = null;
@@ -519,6 +535,8 @@ app.controller("mainController", function($controller, $http, $rootScope, $scope
                 child.ComponentMaterial.diffuse            = Utils.ToFloatArray4(sceneData.components[i].children[j].color);
                 child.ComponentMaterial.specular.intensity = Utils.ToFloatArray3(sceneData.components[i].children[j].spec_intensity);
                 child.ComponentMaterial.specular.shininess = sceneData.components[i].children[j].spec_shininess;
+
+                child.SetBoundingVolume(sceneData.components[i].children[j].bounding_volume);
 
                 // TEXTURES
                 for (let k = 0; k < sceneData.components[i].children[j].nr_of_textures; k++)
@@ -988,7 +1006,7 @@ app.controller("mainController", function($controller, $http, $rootScope, $scope
                     "color":           children[j].ComponentMaterial.diffuse,
                     "spec_intensity":  children[j].ComponentMaterial.specular.intensity,
                     "spec_shininess":  children[j].ComponentMaterial.specular.shininess,
-                    "bounding_box":    (children[j].BoundingVolume() ? children[j].BoundingVolumeType() : "none"),
+                    "bounding_volume": (children[j].BoundingVolume() ? children[j].BoundingVolumeType() : BoundingVolumeType.NONE),
                     "nr_of_textures":  MAX_TEXTURES
                 };
                 
@@ -1062,6 +1080,14 @@ app.controller("mainController", function($controller, $http, $rootScope, $scope
 
         if (DEBUG)
             console.debug(state);
+    }
+
+    /**
+    * @return {boolean}
+    */
+    $scope.showTestDebug = function()
+    {
+        return DEBUG;
     }
 
     /**
@@ -1150,6 +1176,22 @@ app.controller("mainController", function($controller, $http, $rootScope, $scope
     $scope.showTestWater = function()
     {
         return ($scope.selectedComponent && ($scope.selectedComponent.Type() === ComponentType.WATER));
+    }
+    
+    /**
+    * @return {boolean}
+    */
+    $scope.srgbGammaCorrectionGet = function()
+    {
+        return RenderEngine.EnableSRGB;
+    }
+    
+    /**
+    * @param {boolean} enable
+    */
+    $scope.srgbGammaCorrectionSet = function(enable)
+    {
+        RenderEngine.EnableSRGB = enable;
     }
 
     /**

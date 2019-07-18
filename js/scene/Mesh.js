@@ -13,10 +13,10 @@ class Mesh extends Component
         super(name);
 
         let boundingVolume       = null;
-        let boundingVolumeType   = "none";
+        let boundingVolumeType   = BoundingVolumeType.NONE;
         let gl                   = RenderEngine.GLContext();
         let isSelected           = false;
-        let maxScale             = 0;
+        let maxVertexPosition    = [ 0.0, 0.0, 0.0 ];
         let indices              = [];
         let normals              = [];
         let textureCoords        = [];
@@ -30,12 +30,30 @@ class Mesh extends Component
         this.type   = this.Parent.Type();
 
         /**
-        * @return {number}
+        * Index Buffer Object
+        * @return {object}
         */
-        function setMaxScale()
+        this.IBO = function()
         {
-            for (let vertex of vertices)
-                maxScale = Math.max(maxScale, Math.abs(vertex));
+            return (indexBuffer ? indexBuffer.ID() : null);
+        }
+
+        /**
+        * Texture Coordinates Buffer Object
+        * @return {object}
+        */
+        this.TBO = function()
+        {
+            return (textureCoordsBuffer ? textureCoordsBuffer.ID() : null);
+        }
+
+        /**
+        * Vertex Buffer Object
+        * @return {object}
+        */
+        this.VBO = function()
+        {
+            return (vertexBuffer ? vertexBuffer.ID() : null);
         }
 
         /**
@@ -76,20 +94,11 @@ class Mesh extends Component
         }
 
         /**
-        * @return {string}
+        * @return {BoundingVolumeType}
         */
         this.BoundingVolumeType = function()
         {
             return boundingVolumeType;
-        }
-
-        /**
-        * Index Buffer Object
-        * @return {object}
-        */
-        this.IBO = function()
-        {
-            return (indexBuffer ? indexBuffer.ID() : null);
         }
 
         /**
@@ -117,16 +126,16 @@ class Mesh extends Component
 
             this.setModelData();
             this.updateModelData();
-            setMaxScale();
-            this.SetBoundingVolume("box");
+            this.setMaxVertexPosition();
+            this.SetBoundingVolume(BoundingVolumeType.BOX_AABB);
             
             this.isValid = true;
         }
 
         /**
-        * @param {object} json
-        * @param {number} scaleSize
-        * @param {string} meshName
+        * @param {object}        json
+        * @param {Array<number>} scaleSize
+        * @param {string}        meshName
         */
         this.LoadBoundingJSON = function(json, scaleSize, meshName)
         {
@@ -145,10 +154,9 @@ class Mesh extends Component
             if (vertices && (vertices.length > 0))
                 vertexBuffer = new Buffer(gl.ARRAY_BUFFER, ArrayType.FLOAT32, vertices);
 
-            this.scale                = vec3.fromValues(scaleSize, scaleSize, scaleSize);
-            this.LockToParentPosition = true;
-            this.LockToParentRotation = true;
-            this.LockToParentScale    = true;
+            this.scale = vec3.fromValues(
+                (scaleSize[0] + 0.01), (scaleSize[1] + 0.01), (scaleSize[2] + 0.01)
+            );
 
             this.updateModelData();
 
@@ -160,7 +168,10 @@ class Mesh extends Component
         */
         this.LoadBoundingBoxJSON = function(scaleSize)
         {
-            this.LoadBoundingJSON(Utils.CubeJSON, scaleSize, "Bounding Box");
+            if (boundingVolumeType === BoundingVolumeType.BOX_AABB)
+                this.LoadBoundingJSON(Utils.CubeJSON, scaleSize, "Bounding Box (AABB)");
+            else
+                this.LoadBoundingJSON(Utils.CubeJSON, scaleSize, "Bounding Box (OBB)");
         }
 
         /**
@@ -183,7 +194,6 @@ class Mesh extends Component
                 return -1;
             }
 
-            //this.Name = (jsonMesh.name != "" ? jsonMesh.name : "Mesh");
             indices   = [].concat.apply([], jsonMesh.faces);
             normals   = jsonMesh.normals;
             vertices  = jsonMesh.vertices;
@@ -229,9 +239,9 @@ class Mesh extends Component
                 this.ComponentMaterial.specular.shininess = 20.0;
             }
 
-        	this.updateModelData();
-            setMaxScale();
-            this.SetBoundingVolume("box");
+            this.updateModelData();
+            this.setMaxVertexPosition();
+            this.SetBoundingVolume(BoundingVolumeType.BOX_AABB);
             
             this.isValid = (this.IBO() && this.VBO());
 
@@ -252,7 +262,7 @@ class Mesh extends Component
             this.Textures[index] = new Texture([ image ]);
 
             if ((index == 0) && (this.Parent.Type() === ComponentType.HUD))
-                this.Parent.Update(this.Parent.Text());
+                this.Parent.Update();
 
             return 0;
         }
@@ -262,11 +272,8 @@ class Mesh extends Component
         */
         this.MaxBoundaries = function()
         {
-            let parentPosition = this.Parent.Position();
-            let parentScale    = this.Parent.Scale();
-            let maxScale       = (Math.max(Math.max(parentScale[0], parentScale[1]), parentScale[2]) + 0.01);
-
-            return [ (parentPosition[0] + maxScale), (parentPosition[1] + maxScale), (parentPosition[2] + maxScale) ];
+            let max = this.Parent.MaxVertexPosition();
+            return [ (this.position[0] + max[0]), (this.position[1] + max[1]), (this.position[2] - max[2]) ];
         }
 
         /**
@@ -274,32 +281,16 @@ class Mesh extends Component
         */
         this.MinBoundaries = function()
         {
-            let parentPosition = this.Parent.Position();
-            let parentScale    = this.Parent.Scale();
-            let maxScale       = (Math.max(Math.max(parentScale[0], parentScale[1]), parentScale[2]) + 0.01);
-            
-            return [ (parentPosition[0] - maxScale), (parentPosition[1] - maxScale), (parentPosition[2] - maxScale) ];
+            let max = this.Parent.MaxVertexPosition();
+            return [ (this.position[0] - max[0]), (this.position[1] - max[1]), (this.position[2] + max[2]) ];
         }
 
         /**
-        * Moves by amount
-        * @param {Array<number>} amount
+        * @return {Array<number>}
         */
-        this.MoveBy = function(amount)
+        this.MaxVertexPosition = function()
         {
-            if (!isNaN(parseFloat(amount[0])) &&
-                !isNaN(parseFloat(amount[1])) &&
-                !isNaN(parseFloat(amount[2])))
-            {
-                this.position = vec3.add(this.position, this.position, amount);
-                this.updateTranslation();
-
-                if (this.Parent.Text)
-                    this.Parent.Update(this.Parent.Text());
-
-                if (boundingVolume)
-                    boundingVolume.updateTranslation();
-            }
+           return maxVertexPosition;
         }
 
         /**
@@ -315,11 +306,13 @@ class Mesh extends Component
                 this.position = newPosition;
                 this.updateTranslation();
 
-                if (this.Parent.Text)
-                    this.Parent.Update(this.Parent.Text());
+                if (this.Parent.Type() === ComponentType.HUD)
+                    this.Parent.Update();
 
-                if (boundingVolume)
+                if (boundingVolume) {
+                    boundingVolume.position = this.position;
                     boundingVolume.updateTranslation();
+                }
             }
         }
 
@@ -338,6 +331,47 @@ class Mesh extends Component
         this.NrOfIndices = function()
         {
             return (indices ? indices.length : 0);
+        }
+
+        /**
+        * Rotate by amount in radians
+        * @param {Array<number>} amountRadians
+        */
+        this.RotateBy = function(amountRadians)
+        {
+            if (!isNaN(parseFloat(amountRadians[0])) &&
+                !isNaN(parseFloat(amountRadians[1])))
+            {
+                this.rotation[0] += amountRadians[0];
+                this.rotation[1] += amountRadians[1];
+                this.rotation[2] += amountRadians[2];
+
+                this.updateRotation();
+
+                if (this.Parent.Type() === ComponentType.HUD)
+                    this.Parent.Update();
+
+                this.updateBoundingVolume();
+            }
+        }
+
+        /**
+        * Set new rotation in radians
+        * @param {Array<number>} newRotationRadians
+        */
+        this.RotateTo = function(newRotationRadians)
+        {
+            if (!isNaN(parseFloat(newRotationRadians[0])) &&
+                !isNaN(parseFloat(newRotationRadians[1])))
+            {
+                this.rotation = newRotationRadians;
+                this.updateRotation();
+
+                if (this.Parent.Type() === ComponentType.HUD)
+                    this.Parent.Update();
+
+                this.updateBoundingVolume();
+            }
         }
 
         /**
@@ -362,48 +396,82 @@ class Mesh extends Component
             }
         }
 
+        /**
+        * @param {Array<number>} newScale
+        */
+        this.ScaleTo = function(newScale)
+        {
+            if (!isNaN(parseFloat(newScale[0])) &&
+                !isNaN(parseFloat(newScale[1])) &&
+                !isNaN(parseFloat(newScale[2])))
+            {
+                this.scale = newScale;
+                this.updateScale();
+
+                if (this.Parent.Type() === ComponentType.HUD)
+                    this.Parent.Update();
+
+                this.updateBoundingVolume();
+            }
+        }
+
         this.SetBoundingBox = function()
         {
             boundingVolume = new Mesh(this);
-            boundingVolume.LoadBoundingBoxJSON(maxScale + 0.01);
+            boundingVolume.LoadBoundingBoxJSON(maxVertexPosition);
         }
 
         this.SetBoundingSphere = function()
         {
             boundingVolume = new Mesh(this);
-            boundingVolume.LoadBoundingSphereJSON(maxScale + 0.01);
+            boundingVolume.LoadBoundingSphereJSON(maxVertexPosition);
         }
 
         /**
-        * @param {string} type
+        * @param {BoundingVolumeType} type
         */
         this.SetBoundingVolume = function(type)
         {
             switch (type) {
-                case "box":    this.SetBoundingBox();                break;
-                case "sphere": this.SetBoundingSphere();             break;
-                default:       type = "none"; boundingVolume = null; break;
+            case BoundingVolumeType.BOX_AABB:
+            case BoundingVolumeType.BOX_OBB:
+                this.SetBoundingBox();
+                break;
+            case BoundingVolumeType.SPHERE:
+                this.SetBoundingSphere();
+                break;
+            default:
+                type           = BoundingVolumeType.NONE;
+                boundingVolume = null;
+                break;
             }
 
             boundingVolumeType = type;
         }
 
-        /**
-        * Texture Coordinates Buffer Object
-        * @return {object}
-        */
-        this.TBO = function()
+        this.setMaxVertexPosition = function()
         {
-            return (textureCoordsBuffer ? textureCoordsBuffer.ID() : null);
-        }
+            maxVertexPosition = [ 0.0, 0.0, 0.0];
 
-        /**
-        * Vertex Buffer Object
-        * @return {object}
-        */
-        this.VBO = function()
-        {
-            return (vertexBuffer ? vertexBuffer.ID() : null);
+            for (let i = 0; i < vertices.length; i += 3)
+            {
+                let origin  = vec3.create();
+                let rotated = vec3.create();
+
+                let vertex = [
+                     (vertices[i]     * this.scale[0]),
+                     (vertices[i + 1] * this.scale[1]),
+                     (vertices[i + 2] * this.scale[2])
+                ];
+
+                vec3.rotateX(rotated, vertex,  origin, this.rotation[0]);
+                vec3.rotateY(rotated, rotated, origin, this.rotation[1]);
+                vec3.rotateZ(rotated, rotated, origin, this.rotation[2]);
+                
+                maxVertexPosition[0] = Math.max(maxVertexPosition[0], Math.abs(rotated[0]));
+                maxVertexPosition[1] = Math.max(maxVertexPosition[1], Math.abs(rotated[1]));
+                maxVertexPosition[2] = Math.max(maxVertexPosition[2], Math.abs(rotated[2]));
+            }
         }
 
         this.setModelData = function()
@@ -419,6 +487,15 @@ class Mesh extends Component
 
             if (vertices && (vertices.length > 0))
                 vertexBuffer = new Buffer(gl.ARRAY_BUFFER, ArrayType.FLOAT32, vertices);
+        }
+
+        this.updateBoundingVolume = function()
+        {
+            if (boundingVolume) {
+                this.setMaxVertexPosition();
+                boundingVolume.scale = [ maxVertexPosition[0], maxVertexPosition[1], maxVertexPosition[2] ];
+                boundingVolume.updateScale();
+            }
         }
 
         this.updateModelData = function()

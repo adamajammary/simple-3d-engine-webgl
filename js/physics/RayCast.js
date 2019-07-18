@@ -69,14 +69,16 @@ class RayCast
         }
 
         /**
-         * @param {Array<number>} boxMin 
-         * @param {Array<number>} boxMax 
-         */
+        * https://www.unknowncheats.me/forum/counterstrike-global-offensive/136361-external-ray-tracing-ray-aabb.html
+        * https://www.unknowncheats.me/forum/counterstrike-source/109498-efficient-iscrossonhitbox-algorithm.html
+        * http://www.miguelcasillas.com/?p=24
+        * http://www.miguelcasillas.com/?p=30
+        * 
+        * @param {Array<number>} boxMin 
+        * @param {Array<number>} boxMax 
+        */
         this.RayIntersectAABB = function(boxMin, boxMax)
         {
-            // https://www.unknowncheats.me/forum/counterstrike-global-offensive/136361-external-ray-tracing-ray-aabb.html
-            // https://www.unknowncheats.me/forum/counterstrike-source/109498-efficient-iscrossonhitbox-algorithm.html
-            
             // If line is parallel and outside the box it is not possible to intersect
 
             // X
@@ -109,10 +111,14 @@ class RayCast
         }
 
         /**
-         * @param {Array<number>} boxMin 
-         * @param {Array<number>} boxMax 
-         */
-        this.RayIntersectSphere = function(boxMin, boxMax)
+        * https://www.researchgate.net/figure/Bounding-volumes-sphere-axis-aligned-bounding-box-AABB-oriented-bounding-box_fig9_272093426
+        */
+        this.RayIntersectOBB = function()
+        {
+            console.log("RayIntersectOBB: NOT IMPLEMENTED YET");
+        }
+
+        this.RayIntersectSphere = function()
         {
             console.log("RayIntersectSphere: NOT IMPLEMENTED YET");
         }

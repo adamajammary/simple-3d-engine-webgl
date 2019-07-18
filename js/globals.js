@@ -8,6 +8,28 @@ var ArrayType =
     FLOAT32: 0, FLOAT64: 1, INT16: 2, UINT16: 3, INT32: 4, UINT32: 5, INT64: 6, UINT64: 7, NR_OF_ARRAY_TYPES: 8
 };
 
+
+
+/**
+* Bounding Volume Type
+* @global
+* @enum {number}
+*/
+var BoundingVolumeType = 
+{
+    NONE: 0, BOX_AABB: 1, BOX_OBB: 2, SPHERE: 3, NR_OF_BOUNDING_VOLUME_TYPES: 4
+};
+
+/**
+* Component Type
+* @global
+* @enum {number}
+*/
+var ComponentType = 
+{
+    UNKNOWN: -1, CAMERA: 0, HUD: 1, MESH: 2, MODEL: 3, SKYBOX: 4, TERRAIN: 5, WATER: 6, LIGHTSOURCE: 7, NR_OF_COMPONENT_TYPES: 8
+};
+
 /**
 * Component Type
 * @global

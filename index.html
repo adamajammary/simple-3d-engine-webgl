@@ -38,7 +38,7 @@
 </head>
 
 <body>
-    <div class="leaderboard_728x90">
+    <div class="leaderboard_728x90" data-ng-show ="!showTestDebug()">
         <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
         <ins
             class="adsbygoogle"
@@ -119,9 +119,19 @@
             <option style="display:none" value="">Draw Mode</option>
         </select>
         <label>Draw Bounding Volumes</label>
-        <input type="checkbox" onclick="RenderEngine.DrawBoundingVolume=this.checked" />
+        <input
+            type="checkbox"
+            data-ng-model="draw_bounding_volumes"
+            data-ng-checked="draw_bounding_volumes = drawBoundingVolumesGet()"
+            data-ng-change="drawBoundingVolumesSet(draw_bounding_volumes)"
+        />
         <label>sRGB Gamma Correction</label>
-        <input type="checkbox" onclick="RenderEngine.EnableSRGB=this.checked" checked />
+        <input
+            type="checkbox"
+            data-ng-model="srgb_gamma_correction"
+            data-ng-checked="srgb_gamma_correction = srgbGammaCorrectionGet()"
+            data-ng-change="srgbGammaCorrectionSet(srgb_gamma_correction)"
+        />
     </td>
     </tr>
     <tr>
@@ -324,7 +334,7 @@
                     style="width:16px"
                     data-ng-model="mesh_auto_rotate"
                     data-ng-checked="mesh_auto_rotate = selectedChild.AutoRotate"
-                    data-ng-change="selectedChild.SetAutoRotate(mesh_auto_rotate)"
+                    data-ng-change="selectedChild.AutoRotate = mesh_auto_rotate"
                 />
                 </form>
             </div>
@@ -679,7 +689,7 @@
                 <select onchange="angular.element(this).scope().selectedChild.SetBoundingVolume(this.value)">
                     <option
                         data-ng-repeat="v in boundingVolumes"
-                        data-ng-selected="selectedChild.BoundingVolumeType() == v">
+                        data-ng-selected="boundingVolumes[selectedChild.BoundingVolumeType()] === v">
                         {{ v }}
                     </option>
                 </select>
