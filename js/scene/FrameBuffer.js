@@ -94,13 +94,15 @@ class FrameBuffer
 
                 break;
             case FBOType.DEPTH:
-                //depthTexture = new Texture(null, "framebuffer_depth_texture", false, true, false, [ 1.0, 1.0 ], true, false, width, height);
                 texture = new Texture([], textureType, fboType, width, height);
 
-                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, texture.TypeGL(), texture.ID(), 0);
+                if ((textureType === TextureType.TEX_2D_ARRAY) || (textureType === TextureType.CUBEMAP_ARRAY))
+                    gl.framebufferTextureLayer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, texture.ID(), 0, 0);
+                else
+                    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, texture.TypeGL(), texture.ID(), 0);
 
-                gl.drawBuffers(gl.NONE);
-                gl.readBuffer(gl.NONE);
+                gl.drawBuffers([ gl.NONE ]);
+                gl.readBuffer([ gl.NONE ]);
 
                 break;
             default:

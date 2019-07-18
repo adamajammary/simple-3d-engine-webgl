@@ -125,14 +125,16 @@ class Texture
                 }
                 break;
             case gl.TEXTURE_2D_ARRAY:
-                gl.texParameteri(glType, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER);
+                gl.texParameteri(glType, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(glType, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                /*gl.texParameteri(glType, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER);
                 gl.texParameteri(glType, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_BORDER);
+
+                // SET BORDER VALUES FOR CLAMP WRAPPING
+                gl.texParameterf(glType, gl.TEXTURE_BORDER_COLOR, [ 1.0, 1.0, 1.0, 1.0 ]);*/
 
                 gl.texParameteri(glType, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
                 gl.texParameteri(glType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-                // SET BORDER VALUES FOR CLAMP WRAPPING
-                gl.texParameterfv(glType, gl.TEXTURE_BORDER_COLOR, [ 1.0, 1.0, 1.0, 1.0 ]);
 
                 gl.texStorage3D(glType, 1, gl.DEPTH_COMPONENT16, width, height, MAX_LIGHT_SOURCES);
 

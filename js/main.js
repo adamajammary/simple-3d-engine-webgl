@@ -247,8 +247,8 @@ app.controller("mainController", function($controller, $http, $rootScope, $scope
 
         $scope.components = [];
 
-        //RenderEngine.DepthMap2D   = new FrameBuffer(FBO_TEXTURE_SIZE, FBO_TEXTURE_SIZE, FBO_DEPTH, TEXTURE_2D_ARRAY);
-        //RenderEngine.DepthMapCube = new FrameBuffer(FBO_TEXTURE_SIZE, FBO_TEXTURE_SIZE, FBO_DEPTH, TEXTURE_CUBEMAP_ARRAY);
+        Utils.DepthMap2D = new FrameBuffer(FBO_TEXTURE_SIZE, FBO_TEXTURE_SIZE, FBOType.DEPTH, TextureType.TEX_2D_ARRAY);
+        //Utils.DepthMapCube = new FrameBuffer(FBO_TEXTURE_SIZE, FBO_TEXTURE_SIZE, FBOType.DEPTH, TextureType.CUBEMAP_ARRAY);
     }
 
     /**
@@ -1250,13 +1250,13 @@ app.controller("mainController", function($controller, $http, $rootScope, $scope
 
         Utils.EmptyCubemap = new Texture(images, TextureType.CUBEMAP);
         Utils.EmptyTexture = new Texture([ $scope.getResource("emptyTexture") ]);
-        //Utils.DepthMap2D   = new FrameBuffer(FBO_TEXTURE_SIZE, FBO_TEXTURE_SIZE, FBO_DEPTH, TEXTURE_2D_ARRAY);
-        //Utils.DepthMapCube = new FrameBuffer(FBO_TEXTURE_SIZE, FBO_TEXTURE_SIZE, FBO_DEPTH, TEXTURE_CUBEMAP_ARRAY);
+        Utils.DepthMap2D   = new FrameBuffer(FBO_TEXTURE_SIZE, FBO_TEXTURE_SIZE, FBOType.DEPTH, TextureType.TEX_2D_ARRAY);
+        //Utils.DepthMapCube = new FrameBuffer(FBO_TEXTURE_SIZE, FBO_TEXTURE_SIZE, FBOType.DEPTH, TextureType.CUBEMAP_ARRAY);
         Utils.CubeJSON     = Utils.LoadJSON($scope.getResource("cube").result).meshes[0];
         Utils.SphereJSON   = Utils.LoadJSON($scope.getResource("ico_sphere").result).meshes[0];
 
-        //if (!Utils.EmptyCubemap || !Utils.EmptyTexture || !Utils.DepthMap2D.GetTexture() || !Utils.DepthMapCube.GetTexture())
-        if (!Utils.EmptyCubemap || !Utils.EmptyTexture)
+        //if (!Utils.EmptyCubemap || !Utils.EmptyTexture || !Utils.DepthMap2D.Texture() || !Utils.DepthMapCube.Texture())
+        if (!Utils.EmptyCubemap || !Utils.EmptyTexture || !Utils.DepthMap2D.Texture())
         {
             alert("ERROR: Failed to create various resources.");
             $scope.setState("Creating various resources ... FAIL");

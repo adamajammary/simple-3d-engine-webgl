@@ -296,16 +296,16 @@ vec4 GetDirectionalLight(int i, vec3 normal, vec3 cameraView, vec4 materialColor
 	float specularFactor = GetSpecularFactor(lightDirection, normal, cameraView, materialSpec.a);
 	
 	// Shadow
-	//vec4  positionLightSpace = (light.ViewProjection * vec4(FragmentPosition.xyz, 1.0));
-	//float shadowFactor       = (1.0 - GetShadowFactor(i, lightDirection, normal, positionLightSpace));
+	vec4  positionLightSpace = (light.ViewProjection * vec4(FragmentPosition.xyz, 1.0));
+	float shadowFactor       = (1.0 - GetShadowFactor(i, lightDirection, normal, positionLightSpace));
 
     // Combine the light calculations
     vec3 ambientFinal  = (light.Ambient.rgb  * materialColor.rgb);
     vec3 diffuseFinal  = (light.Diffuse.rgb  * materialColor.rgb * diffuseFactor);
     vec3 specularFinal = (light.Specular.rgb * materialSpec.rgb  * specularFactor);
 
-    return vec4((ambientFinal + diffuseFinal + specularFinal), materialColor.a);
-    //return vec4((ambientFinal + (shadowFactor * (diffuseFinal + specularFinal))), materialColor.a);
+    //return vec4((ambientFinal + diffuseFinal + specularFinal), materialColor.a);
+    return vec4((ambientFinal + (shadowFactor * (diffuseFinal + specularFinal))), materialColor.a);
 }
 
 vec4 GetPointLight(int i, vec3 normal, vec3 cameraView, vec4 materialColor, vec4 materialSpec)
@@ -356,16 +356,16 @@ vec4 GetSpotLight(int i, vec3 normal, vec3 cameraView, vec4 materialColor, vec4 
 	float spotLightFactor = GetSpotLightFactor(light, lightDirection);
 	
 	// Shadow
-	//vec4  positionLightSpace = (light.ViewProjection * vec4(FragmentPosition.xyz, 1.0));
-	//float shadowFactor       = (1.0 - GetShadowFactor(i, lightDirection, normal, positionLightSpace));
+	vec4  positionLightSpace = (light.ViewProjection * vec4(FragmentPosition.xyz, 1.0));
+	float shadowFactor       = (1.0 - GetShadowFactor(i, lightDirection, normal, positionLightSpace));
 	
     // Combine the light calculations
     vec3 ambient  = (spotLightFactor * attenuationFactor * light.Ambient.rgb  * materialColor.rgb);
     vec3 diffuse  = (spotLightFactor * attenuationFactor * light.Diffuse.rgb  * materialColor.rgb * diffuseFactor);
     vec3 specular = (spotLightFactor * attenuationFactor * light.Specular.rgb * materialSpec.rgb  * specularFactor);
 	
-    return vec4((ambient + diffuse + specular), materialColor.a);
-    //return vec4((ambient + (shadowFactor * (diffuse + specular))), materialColor.a);
+    //return vec4((ambient + diffuse + specular), materialColor.a);
+    return vec4((ambient + (shadowFactor * (diffuse + specular))), materialColor.a);
 }
 
 // HDR (HIGH DYNAMIC RANGE) - TONE MAPPING (REINHARD)

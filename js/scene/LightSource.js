@@ -22,33 +22,33 @@ class LightSource extends Component
 
             switch (this.sourceType) {
             case LightType.DIRECTIONAL:
-                light.direction        = vec3.fromValues(0.5, -1.0, -0.2);
-                light.position         = vec3.fromValues(-2.0, 3.0, 3.0);
-                light.material.diffuse = vec4.fromValues(0.4, 0.4, 0.4, 1.0);
+                light.direction        = [ 0.5, -1.0, -0.2 ];
+                light.position         = [ -2.0, 3.0, 3.0 ];
+                light.material.diffuse = [ 0.4, 0.4, 0.4, 1.0 ];
                 break;
             case LightType.POINT:
                 light.attenuation.constant  = 1.0;
                 light.attenuation.linear    = 0.09;
                 light.attenuation.quadratic = 0.032;
-                light.position              = vec3.fromValues(0.0, 5.0, 0.0);
-                light.material.diffuse      = vec4.fromValues(1.0, 1.0, 0.0, 1.0);
+                light.position              = [ 0.0, 5.0, 0.0 ];
+                light.material.diffuse      = [ 1.0, 1.0, 0.0, 1.0 ];
                 break;
             case LightType.SPOT:
                 light.attenuation.constant  = 1.0;
                 light.attenuation.linear    = 0.09;
                 light.attenuation.quadratic = 0.032;
-                light.direction             = vec3.fromValues(0.0, -1.0, 0.0);
-                light.position              = vec3.fromValues(0.0, 5.0,  0.0);
+                light.direction             = [ 0.0, -1.0, 0.0 ];
+                light.position              = [ 0.0, 5.0,  0.0 ];
                 light.innerAngle            = glMatrix.toRadian(12.5);
                 light.outerAngle            = glMatrix.toRadian(17.5);
-                light.material.diffuse      = vec4.fromValues(1.0, 1.0, 0.0, 1.0);
+                light.material.diffuse      = [ 1.0, 1.0, 0.0, 1.0 ];
                 break;
             default:
                 break;
             }
 
-            light.material.ambient            = vec3.fromValues(0.2, 0.2, 0.2);
-            light.material.specular.intensity = vec3.fromValues(0.6, 0.6, 0.6);
+            light.material.ambient            = [ 0.2, 0.2, 0.2 ];
+            light.material.specular.intensity = [ 0.6, 0.6, 0.6 ];
             light.material.specular.shininess = 20.0;
 
             return light;
@@ -144,7 +144,12 @@ class LightSource extends Component
         */
         this.MVP = function(model)
         {
-            return (this.projection * views[0] * model);
+            let mvp = mat4.create();
+
+            mat4.multiply(mvp, views[0], model);
+            mat4.multiply(mvp, this.projection, mvp);
+
+            return mvp;
         }
 
         /**
@@ -292,21 +297,34 @@ class LightSource extends Component
 
         this.updateView = function()
         {
-            let dir = this.light.direction;
-            let pos = this.light.position;
+            let center = [];
+            let dir    = this.light.direction;
+            let pos    = this.light.position;
 
             switch (this.sourceType) {
             case LightType.DIRECTIONAL:
-                mat4.lookAt(views[0], pos, (pos + dir), RenderEngine.Camera.Up());
+                center = [ (pos[0] + dir[0]), (pos[1] + dir[1]), (pos[2] + dir[2]) ];
+                mat4.lookAt(views[0], pos, center, RenderEngine.Camera.Up());
                 break;
             case LightType.POINT:
                 // 6 view directions: right, left, top, bottom, near, far
-                mat4.lookAt(views[0], pos, (pos + vec3.fromValues(1.0,  0.0, 0.0)), vec3.fromValues(0.0, -1.0, 0.0));
-                mat4.lookAt(views[1], pos, (pos + vec3.fromValues(-1.0, 0.0, 0.0)), vec3.fromValues(0.0, -1.0, 0.0));
-                mat4.lookAt(views[2], pos, (pos + vec3.fromValues(0.0,  1.0, 0.0)), vec3.fromValues(0.0,  0.0, 1.0));
-                mat4.lookAt(views[3], pos, (pos + vec3.fromValues(0.0, -1.0, 0.0)), vec3.fromValues(0.0, 0.0, -1.0));
-                mat4.lookAt(views[4], pos, (pos + vec3.fromValues(0.0,  0.0, 1.0)), vec3.fromValues(0.0, -1.0, 0.0));
-                mat4.lookAt(views[5], pos, (pos + vec3.fromValues(0.0, 0.0, -1.0)), vec3.fromValues(0.0, -1.0, 0.0));
+                center = [ (pos[0] + 1.0), (pos[1] + 0.0), (pos[2] + 0.0) ];
+                mat4.lookAt(views[0], pos, center, [ 0.0, -1.0, 0.0 ]);
+
+                center = [ (pos[0] + -1.0), (pos[1] + 0.0), (pos[2] + 0.0) ];
+                mat4.lookAt(views[1], pos, center, [ 0.0, -1.0, 0.0 ]);
+
+                center = [ (pos[0] + 0.0), (pos[1] + 1.0), (pos[2] + 0.0) ];
+                mat4.lookAt(views[2], pos, center, [ 0.0,  0.0, 1.0 ]);
+
+                center = [ (pos[0] + 0.0), (pos[1] + -1.0), (pos[2] + 0.0) ];
+                mat4.lookAt(views[3], pos, center, [ 0.0, 0.0, -1.0 ]);
+
+                center = [ (pos[0] + 0.0), (pos[1] + 0.0), (pos[2] + 1.0) ];
+                mat4.lookAt(views[4], pos, center, [ 0.0, -1.0, 0.0 ]);
+
+                center = [ (pos[0] + 0.0), (pos[1] +  0.0), (pos[2] + -1.0) ];
+                mat4.lookAt(views[5], pos, center, [ 0.0, -1.0, 0.0 ]);
                 break;
             case LightType.SPOT:
                 mat4.lookAt(views[0], pos, dir, RenderEngine.Camera.Up());

@@ -172,15 +172,15 @@ class ShaderProgram
             {
                 if ((id = this.Uniform("Model")))
                     gl.uniformMatrix4fv(id, false, mesh.Matrix());
-
+                
                 if ((id = this.Uniform("MVP")))
-                    gl.uniformMatrix4fv(id, false, lightsource.MVP(mesh.Matrix()));
+                    gl.uniformMatrix4fv(id, false, properties.Light.MVP(mesh.Matrix()));
 
-                let projection = lightSource.Projection();
+                let projection = properties.Light.Projection();
 
                 for (let i = 0; i < MAX_TEXTURES; i++) {
                     if ((id = this.Uniform("VP[" + i + "]")))
-                        gl.uniformMatrix4fv(id, false, (projection * lightSource.View(i)));
+                        gl.uniformMatrix4fv(id, false, (projection * properties.Light.View(i)));
                 }
             }
             else
@@ -305,7 +305,7 @@ class ShaderProgram
             if ((id = this.Uniform("DepthMapTextures2D")) && Utils.DepthMap2D) {
                 gl.uniform1i(id, 6);
                 gl.activeTexture(gl.TEXTURE6);
-                gl.bindTexture(gl.TEXTURE_2D_ARRAY, Utils.DepthMap2D.GetTexture().ID());
+                gl.bindTexture(gl.TEXTURE_2D_ARRAY, Utils.DepthMap2D.Texture().ID());
             } else {
                 gl.bindTexture(gl.TEXTURE_2D_ARRAY, null);
             }
@@ -314,7 +314,7 @@ class ShaderProgram
             /*if ((id = this.Uniform("DepthMapTexturesCube")) && Utils.DepthMapCube) {
                 gl.uniform1i(id, 7);
                 gl.activeTexture(gl.TEXTURE7);
-                gl.bindTexture(gl.TEXTURE_CUBE_MAP_ARRAY, Utils.DepthMapCube.GetTexture().ID());
+                gl.bindTexture(gl.TEXTURE_CUBE_MAP_ARRAY, Utils.DepthMapCube.Texture().ID());
             } else {
                 gl.bindTexture(gl.TEXTURE_CUBE_MAP_ARRAY, null);
             }*/
